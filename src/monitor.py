@@ -5,10 +5,15 @@
 """
 import threading
 import time
+from collections import deque
 from datetime import datetime
 from src.scraper import WebViewScraper, normalize
 from src.config import load_watchlist, save_watchlist, load_settings
 from src.notifier import send_alert
+
+
+# 每个子弹缓存的历史价格轮数
+PRICE_HISTORY_SIZE = 20
 
 
 class MonitorEngine:
@@ -24,7 +29,10 @@ class MonitorEngine:
         self.bullet_list = load_watchlist()
         self.prev_prices = {}
         self.cur_prices = {}
-        self.notified = {}  # {name: price} 已通知的补货
+        # 价格历史缓存: {name: deque([price1, price2, ...], maxlen=PRICE_HISTORY_SIZE)}
+        self.price_history = {}
+        # 已通知状态: {name: {'buy': price, 'sell': price}}
+        self.notified = {}
         self.logs = []
         self.alerts = []
 
@@ -40,7 +48,11 @@ class MonitorEngine:
             return False
         if any(b['name'] == name for b in self.bullet_list):
             return False
-        self.bullet_list.append({'name': name, 'threshold': 0})
+        self.bullet_list.append({
+            'name': name,
+            'buy_threshold': 0,
+            'sell_threshold': 0,
+        })
         save_watchlist(self.bullet_list)
         self._log(f"✅ 添加: {name}")
         return True
@@ -48,18 +60,30 @@ class MonitorEngine:
     def remove_bullet(self, name: str):
         self.bullet_list = [b for b in self.bullet_list if b['name'] != name]
         save_watchlist(self.bullet_list)
-        for d in (self.notified, self.prev_prices, self.cur_prices):
+        for d in (self.notified, self.prev_prices, self.cur_prices, self.price_history):
             d.pop(name, None)
         self._log(f"🗑 删除: {name}")
 
-    def set_threshold(self, name: str, threshold: int):
+    def set_buy_threshold(self, name: str, threshold: int):
         for b in self.bullet_list:
             if b['name'] == name:
-                b['threshold'] = threshold
+                b['buy_threshold'] = threshold
                 save_watchlist(self.bullet_list)
-                self.notified.pop(name, None)
+                if name in self.notified:
+                    self.notified[name].pop('buy', None)
                 label = str(threshold) if threshold > 0 else '关闭'
-                self._log(f"✏ {name} 检测线 → {label}")
+                self._log(f"✏ {name} 买入线 → {label}")
+                return
+
+    def set_sell_threshold(self, name: str, threshold: int):
+        for b in self.bullet_list:
+            if b['name'] == name:
+                b['sell_threshold'] = threshold
+                save_watchlist(self.bullet_list)
+                if name in self.notified:
+                    self.notified[name].pop('sell', None)
+                label = str(threshold) if threshold > 0 else '关闭'
+                self._log(f"✏ {name} 卖出线 → {label}")
                 return
 
     def get_status(self) -> list:
@@ -67,16 +91,20 @@ class MonitorEngine:
         result = []
         for b in self.bullet_list:
             name = b['name']
-            threshold = b['threshold']
+            buy_thr = b.get('buy_threshold', 0)
+            sell_thr = b.get('sell_threshold', 0)
             price = self.cur_prices.get(name)
             prev = self.prev_prices.get(name)
 
             if price is None:
                 status = "waiting"
                 status_text = "等待数据"
-            elif threshold > 0 and price <= threshold:
-                status = "restock"
-                status_text = f"⚠ 疑似补货 (≤{threshold})"
+            elif buy_thr > 0 and price <= buy_thr:
+                status = "buy_signal"
+                status_text = f"💰 买入机会 (≤{buy_thr})"
+            elif sell_thr > 0 and price >= sell_thr:
+                status = "sell_signal"
+                status_text = f"🔥 可以卖出 (≥{sell_thr})"
             elif prev is not None and price > prev:
                 status = "up"
                 status_text = f"↑ {prev}→{price}"
@@ -90,7 +118,8 @@ class MonitorEngine:
             result.append({
                 'name': name,
                 'price': price,
-                'threshold': threshold,
+                'buy_threshold': buy_thr,
+                'sell_threshold': sell_thr,
                 'status': status,
                 'status_text': status_text,
             })
@@ -117,7 +146,6 @@ class MonitorEngine:
         ts = datetime.now().strftime("%H:%M:%S")
         entry = f"[{ts}] {msg}"
         self.logs.append(entry)
-        # 保留最近200条
         if len(self.logs) > 200:
             self.logs = self.logs[-150:]
         if self.on_log:
@@ -131,6 +159,16 @@ class MonitorEngine:
             self.alerts = self.alerts[-150:]
         if self.on_alert:
             self.on_alert(entry, level)
+
+    def _update_price_history(self, matched: dict):
+        """更新价格历史缓存（每个子弹最多保留 PRICE_HISTORY_SIZE 轮）"""
+        for name, price in matched.items():
+            if name not in self.price_history:
+                self.price_history[name] = deque(maxlen=PRICE_HISTORY_SIZE)
+            history = self.price_history[name]
+            # 只在价格有变化或历史为空时记录，避免重复
+            if not history or history[-1] != price:
+                history.append(price)
 
     def _match(self, scraped: dict) -> dict:
         """将抓取到的数据与监控列表匹配"""
@@ -171,25 +209,49 @@ class MonitorEngine:
         return matched
 
     def _check_changes(self, matched: dict):
-        """检测价格变动并触发警报"""
+        """检测价格变动并触发买入/卖出警报"""
         for b in self.bullet_list:
             name = b['name']
-            threshold = b['threshold']
+            buy_thr = b.get('buy_threshold', 0)
+            sell_thr = b.get('sell_threshold', 0)
             new_p = matched.get(name)
             old_p = self.prev_prices.get(name)
 
-            if new_p is None or old_p is None or new_p == old_p:
+            if new_p is None:
                 continue
 
-            self._alert(f"{name}: {old_p}→{new_p}")
+            if name not in self.notified:
+                self.notified[name] = {}
 
-            if threshold > 0 and new_p <= threshold:
-                if self.notified.get(name) != new_p:
-                    self.notified[name] = new_p
-                    self._alert(f"⚠ {name} 疑似补货! ({new_p} ≤ {threshold})", "critical")
-                    send_alert(f"{name} 疑似补货", f"当前: {new_p}  检测线: {threshold}")
+            # --- 买入线检测 ---
+            if buy_thr > 0 and new_p <= buy_thr:
+                if self.notified[name].get('buy') != new_p:
+                    self.notified[name]['buy'] = new_p
+                    self._alert(
+                        f"💰 {name} 买入机会! 当前{new_p} ≤ 买入线{buy_thr}",
+                        "buy"
+                    )
+                    send_alert(
+                        f"{name} 买入机会",
+                        f"当前: {new_p}  买入线: {buy_thr}"
+                    )
             else:
-                self.notified.pop(name, None)
+                self.notified.get(name, {}).pop('buy', None)
+
+            # --- 卖出线检测 ---
+            if sell_thr > 0 and new_p >= sell_thr:
+                if self.notified[name].get('sell') != new_p:
+                    self.notified[name]['sell'] = new_p
+                    self._alert(
+                        f"🔥 {name} 可以卖出! 当前{new_p} ≥ 卖出线{sell_thr}",
+                        "sell"
+                    )
+                    send_alert(
+                        f"{name} 可以卖出",
+                        f"当前: {new_p}  卖出线: {sell_thr}"
+                    )
+            else:
+                self.notified.get(name, {}).pop('sell', None)
 
     def _loop(self):
         settings = load_settings()
@@ -219,6 +281,7 @@ class MonitorEngine:
                 fails = 0
                 matched = self._match(scraped)
                 self._check_changes(matched)
+                self._update_price_history(matched)
                 self.prev_prices = self.cur_prices.copy()
                 self.cur_prices = matched
 

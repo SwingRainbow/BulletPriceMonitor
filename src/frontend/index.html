@@ -23,6 +23,10 @@
   --accent-red: #f85149;
   --accent-orange: #d29922;
   --accent-purple: #bc8cff;
+  --color-buy: #3fb950;
+  --color-buy-bg: rgba(63,185,80,.12);
+  --color-sell: #f0883e;
+  --color-sell-bg: rgba(240,136,62,.12);
   --shadow: 0 2px 8px rgba(0,0,0,.3);
   --radius: 8px;
   --radius-lg: 12px;
@@ -168,6 +172,10 @@ thead th {
   text-transform: uppercase; letter-spacing: .5px;
   text-align: left; border-bottom: 1px solid var(--border);
 }
+/* 买入线/卖出线表头颜色标记 */
+thead th.th-buy { color: var(--color-buy); }
+thead th.th-sell { color: var(--color-sell); }
+
 tbody td {
   padding: 8px 14px; font-size: 13px; border-bottom: 1px solid var(--border);
   vertical-align: middle;
@@ -182,13 +190,18 @@ tbody tr:hover { background: rgba(88,166,255,.04); }
   font-family: 'Cascadia Code', monospace; font-weight: 600;
   color: var(--accent-orange);
 }
+
+/* 买入线/卖出线可点击单元格 */
 .threshold-cell {
   cursor: pointer; font-family: 'Cascadia Code', monospace;
-  color: var(--accent-purple); transition: color .15s;
+  transition: color .15s;
 }
-.threshold-cell:hover { color: var(--accent-blue); text-decoration: underline; }
+.threshold-cell:hover { text-decoration: underline; }
 .threshold-cell.unset { color: var(--text-muted); font-style: italic; font-family: inherit; }
+.threshold-cell.buy-line { color: var(--color-buy); }
+.threshold-cell.sell-line { color: var(--color-sell); }
 
+/* 状态标签 */
 .status-tag {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;
@@ -197,9 +210,20 @@ tbody tr:hover { background: rgba(88,166,255,.04); }
 .status-tag.stable { background: rgba(63,185,80,.1); color: var(--accent-green); }
 .status-tag.up { background: rgba(248,81,73,.1); color: var(--accent-red); }
 .status-tag.down { background: rgba(88,166,255,.1); color: var(--accent-blue); }
-.status-tag.restock { background: rgba(248,81,73,.2); color: var(--accent-red); font-weight: 700; animation: flash .8s infinite; }
+.status-tag.buy_signal {
+  background: var(--color-buy-bg); color: var(--color-buy);
+  font-weight: 700; animation: flash-buy 1s infinite;
+}
+.status-tag.sell_signal {
+  background: var(--color-sell-bg); color: var(--color-sell);
+  font-weight: 700; animation: flash-sell 1s infinite;
+}
 
-@keyframes flash {
+@keyframes flash-buy {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .6; }
+}
+@keyframes flash-sell {
   0%, 100% { opacity: 1; }
   50% { opacity: .6; }
 }
@@ -244,9 +268,11 @@ tbody tr:hover { background: rgba(88,166,255,.04); }
 .log-entry { color: var(--text-secondary); }
 .log-entry.error { color: var(--accent-red); }
 .log-entry.warning { color: var(--accent-orange); }
+.log-entry.buy { color: var(--color-buy); font-weight: 600; }
+.log-entry.sell { color: var(--color-sell); font-weight: 600; }
 .log-entry.critical { color: var(--accent-red); font-weight: 700; }
 
-.alert-panel .log-header { color: var(--accent-red); }
+.alert-panel .log-header { color: var(--accent-orange); }
 
 /* ===== Modal ===== */
 .modal-overlay {
@@ -261,6 +287,8 @@ tbody tr:hover { background: rgba(88,166,255,.04); }
   box-shadow: 0 8px 32px rgba(0,0,0,.5);
 }
 .modal h3 { font-size: 15px; margin-bottom: 12px; }
+.modal h3.modal-buy { color: var(--color-buy); }
+.modal h3.modal-sell { color: var(--color-sell); }
 .modal input {
   width: 100%; background: var(--bg-primary); border: 1px solid var(--border);
   border-radius: 6px; padding: 8px 12px; color: var(--text-primary);
@@ -268,6 +296,8 @@ tbody tr:hover { background: rgba(88,166,255,.04); }
   outline: none; margin-bottom: 14px;
 }
 .modal input:focus { border-color: var(--accent-blue); }
+.modal input.input-buy:focus { border-color: var(--color-buy); }
+.modal input.input-sell:focus { border-color: var(--color-sell); }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .modal p.hint { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
 </style>
@@ -316,21 +346,21 @@ tbody tr:hover { background: rgba(88,166,255,.04); }
       </div>
     </div>
     <div class="stat-card">
-      <div class="stat-icon green">✅</div>
+      <div class="stat-icon green">💰</div>
       <div class="stat-info">
-        <span id="statMatched" class="stat-value">0</span>
-        <span class="stat-label">已匹配</span>
+        <span id="statBuy" class="stat-value">0</span>
+        <span class="stat-label">买入机会</span>
       </div>
     </div>
     <div class="stat-card">
-      <div class="stat-icon red">⚠</div>
+      <div class="stat-icon orange">🔥</div>
       <div class="stat-info">
-        <span id="statAlerts" class="stat-value">0</span>
-        <span class="stat-label">补货警报</span>
+        <span id="statSell" class="stat-value">0</span>
+        <span class="stat-label">卖出机会</span>
       </div>
     </div>
     <div class="stat-card">
-      <div class="stat-icon orange">⏱</div>
+      <div class="stat-icon red">⏱</div>
       <div class="stat-info">
         <span id="statSpeed" class="stat-value">—</span>
         <span class="stat-label">响应速度</span>
@@ -343,21 +373,22 @@ tbody tr:hover { background: rgba(88,166,255,.04); }
     <!-- Bullet Table -->
     <div class="table-section">
       <div class="table-header">
-        <span class="table-title">监控列表（点击检测线可编辑）</span>
+        <span class="table-title">监控列表（点击买入线/卖出线可编辑）</span>
       </div>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th style="width:30%">子弹名称</th>
-              <th style="width:15%">当前价格</th>
-              <th style="width:15%">检测线</th>
-              <th style="width:28%">状态</th>
+              <th style="width:22%">子弹名称</th>
+              <th style="width:12%">当前价格</th>
+              <th style="width:12%" class="th-buy">买入线 ↓</th>
+              <th style="width:12%" class="th-sell">卖出线 ↑</th>
+              <th style="width:30%">状态</th>
               <th style="width:12%; text-align:center">操作</th>
             </tr>
           </thead>
           <tbody id="bulletTableBody">
-            <tr><td colspan="5" class="empty-state">暂无监控项，请添加子弹名称</td></tr>
+            <tr><td colspan="6" class="empty-state">暂无监控项，请添加子弹名称</td></tr>
           </tbody>
         </table>
       </div>
@@ -370,7 +401,7 @@ tbody tr:hover { background: rgba(88,166,255,.04); }
         <div id="logBody" class="log-body"></div>
       </div>
       <div class="log-panel alert-panel">
-        <div class="log-header"><span class="icon">🚨</span> 价格异常</div>
+        <div class="log-header"><span class="icon">📊</span> 买卖信号</div>
         <div id="alertBody" class="log-body"></div>
       </div>
     </div>
@@ -380,8 +411,8 @@ tbody tr:hover { background: rgba(88,166,255,.04); }
 <!-- Threshold Modal -->
 <div id="thresholdModal" class="modal-overlay" onclick="if(event.target===this)closeModal()">
   <div class="modal">
-    <h3 id="modalTitle">设置检测线</h3>
-    <p class="hint">≤ 此价格时触发补货提醒，0 = 不检测</p>
+    <h3 id="modalTitle">设置阈值</h3>
+    <p id="modalHint" class="hint">设为 0 = 不检测</p>
     <input id="modalInput" type="number" min="0" placeholder="0"
            onkeydown="if(event.key==='Enter')confirmModal()">
     <div class="modal-actions">
@@ -393,7 +424,7 @@ tbody tr:hover { background: rgba(88,166,255,.04); }
 
 <script>
 // ========== State ==========
-let _modalTarget = null;
+let _modalTarget = null;   // {name, type: 'buy'|'sell'}
 
 // ========== API Bridge ==========
 async function api(method, ...args) {
@@ -447,12 +478,28 @@ async function doRemove(name) {
   refreshTable();
 }
 
-function openThresholdModal(name, current) {
-  _modalTarget = name;
-  document.getElementById('modalTitle').textContent = `${name} — 检测线`;
-  document.getElementById('modalInput').value = current || 0;
+// ========== Modal ==========
+function openThresholdModal(name, type, current) {
+  _modalTarget = { name: name, type: type };
+  const titleEl = document.getElementById('modalTitle');
+  const hintEl = document.getElementById('modalHint');
+  const inputEl = document.getElementById('modalInput');
+
+  if (type === 'buy') {
+    titleEl.textContent = name + ' — 买入线';
+    titleEl.className = 'modal-buy';
+    hintEl.textContent = '≤ 此价格时提醒买入，0 = 不检测';
+    inputEl.className = 'input-buy';
+  } else {
+    titleEl.textContent = name + ' — 卖出线';
+    titleEl.className = 'modal-sell';
+    hintEl.textContent = '≥ 此价格时提醒卖出，0 = 不检测';
+    inputEl.className = 'input-sell';
+  }
+
+  inputEl.value = current || 0;
   document.getElementById('thresholdModal').classList.add('active');
-  setTimeout(() => document.getElementById('modalInput').focus(), 100);
+  setTimeout(() => inputEl.focus(), 100);
 }
 
 function closeModal() {
@@ -463,7 +510,11 @@ function closeModal() {
 async function confirmModal() {
   if (!_modalTarget) return;
   const val = parseInt(document.getElementById('modalInput').value) || 0;
-  await api('set_threshold', _modalTarget, val);
+  if (_modalTarget.type === 'buy') {
+    await api('set_buy_threshold', _modalTarget.name, val);
+  } else {
+    await api('set_sell_threshold', _modalTarget.name, val);
+  }
   closeModal();
   refreshTable();
 }
@@ -484,7 +535,6 @@ function appendLog(msg) {
   div.textContent = msg;
   body.appendChild(div);
   body.scrollTop = body.scrollHeight;
-  // 限制数量
   while (body.children.length > 150) body.removeChild(body.firstChild);
 }
 
@@ -504,7 +554,7 @@ async function refreshTable() {
 
   const tbody = document.getElementById('bulletTableBody');
   if (data.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">暂无监控项，请添加子弹名称</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">暂无监控项，请添加子弹名称</td></tr>';
     updateStats(data);
     return;
   }
@@ -512,19 +562,27 @@ async function refreshTable() {
   let html = '';
   for (const item of data) {
     const priceDisplay = item.price !== null ? item.price : '—';
-    const thrDisplay = item.threshold > 0
-      ? `<span class="threshold-cell" onclick="openThresholdModal('${item.name}', ${item.threshold})">${item.threshold}</span>`
-      : `<span class="threshold-cell unset" onclick="openThresholdModal('${item.name}', 0)">点击设置</span>`;
 
-    html += `<tr>
-      <td class="bullet-name">${item.name}</td>
-      <td class="price-cell">${priceDisplay}</td>
-      <td>${thrDisplay}</td>
-      <td><span class="status-tag ${item.status}">${item.status_text}</span></td>
-      <td style="text-align:center">
-        <button class="action-btn" onclick="doRemove('${item.name}')" title="删除">✕</button>
-      </td>
-    </tr>`;
+    // 买入线
+    const buyDisplay = item.buy_threshold > 0
+      ? '<span class="threshold-cell buy-line" onclick="openThresholdModal(\'' + item.name + '\', \'buy\', ' + item.buy_threshold + ')">' + item.buy_threshold + '</span>'
+      : '<span class="threshold-cell unset" onclick="openThresholdModal(\'' + item.name + '\', \'buy\', 0)">点击设置</span>';
+
+    // 卖出线
+    const sellDisplay = item.sell_threshold > 0
+      ? '<span class="threshold-cell sell-line" onclick="openThresholdModal(\'' + item.name + '\', \'sell\', ' + item.sell_threshold + ')">' + item.sell_threshold + '</span>'
+      : '<span class="threshold-cell unset" onclick="openThresholdModal(\'' + item.name + '\', \'sell\', 0)">点击设置</span>';
+
+    html += '<tr>' +
+      '<td class="bullet-name">' + item.name + '</td>' +
+      '<td class="price-cell">' + priceDisplay + '</td>' +
+      '<td>' + buyDisplay + '</td>' +
+      '<td>' + sellDisplay + '</td>' +
+      '<td><span class="status-tag ' + item.status + '">' + item.status_text + '</span></td>' +
+      '<td style="text-align:center">' +
+        '<button class="action-btn" onclick="doRemove(\'' + item.name + '\')" title="删除">✕</button>' +
+      '</td>' +
+    '</tr>';
   }
   tbody.innerHTML = html;
   updateStats(data);
@@ -532,12 +590,11 @@ async function refreshTable() {
 
 function updateStats(data) {
   document.getElementById('statTotal').textContent = data.length;
-  document.getElementById('statMatched').textContent = data.filter(d => d.price !== null).length;
-  document.getElementById('statAlerts').textContent = data.filter(d => d.status === 'restock').length;
+  document.getElementById('statBuy').textContent = data.filter(d => d.status === 'buy_signal').length;
+  document.getElementById('statSell').textContent = data.filter(d => d.status === 'sell_signal').length;
 }
 
 // ========== Callbacks from Python ==========
-// These are called by the Python backend via window.evaluate_js
 window.onPyLog = function(msg) { appendLog(msg); };
 window.onPyAlert = function(msg, level) { appendAlert(msg, level); };
 window.onPyUpdate = function() { refreshTable(); };
@@ -555,11 +612,9 @@ window.onPySpeed = function(speed) {
 // ========== Init ==========
 window.addEventListener('pywebviewready', function() {
   refreshTable();
-  // 显示版本号
   api('get_version').then(v => {
     if (v) document.getElementById('verInfo').textContent = 'v' + v + ' · webview · 子进程抓取';
   });
-  // 检查更新
   api('check_for_update').then(r => {
     try {
       var j = JSON.parse(r);
@@ -569,7 +624,6 @@ window.addEventListener('pywebviewready', function() {
     } catch(e) {}
   });
 });
-// Fallback if event already fired
 setTimeout(() => refreshTable(), 500);
 </script>
 </body>

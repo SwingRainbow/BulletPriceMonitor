@@ -74,8 +74,11 @@ class Api:
     def remove_bullet(self, name: str):
         self._engine.remove_bullet(name)
 
-    def set_threshold(self, name: str, threshold: int):
-        self._engine.set_threshold(name, threshold)
+    def set_buy_threshold(self, name: str, threshold: int):
+        self._engine.set_buy_threshold(name, threshold)
+
+    def set_sell_threshold(self, name: str, threshold: int):
+        self._engine.set_sell_threshold(name, threshold)
 
     def get_status(self):
         return self._engine.get_status()

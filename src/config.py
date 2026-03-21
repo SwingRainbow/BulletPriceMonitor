@@ -34,16 +34,33 @@ def _ensure_dir(filepath):
 
 # ---------- 监控列表 ----------
 def load_watchlist() -> list:
-    """加载监控子弹列表，返回 [{'name': str, 'threshold': int}, ...]"""
+    """
+    加载监控子弹列表
+    返回 [{'name': str, 'buy_threshold': int, 'sell_threshold': int}, ...]
+    兼容旧格式自动迁移
+    """
     try:
         if os.path.exists(CONFIG_FILE):
             with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 items = data.get('bullets', [])
+                if not items:
+                    return []
                 # 兼容旧格式（纯字符串列表）
-                if items and isinstance(items[0], str):
-                    return [{'name': b, 'threshold': 0} for b in items]
-                return items
+                if isinstance(items[0], str):
+                    return [{'name': b, 'buy_threshold': 0, 'sell_threshold': 0} for b in items]
+                # 兼容旧格式（单 threshold）
+                migrated = []
+                for b in items:
+                    if 'buy_threshold' not in b:
+                        migrated.append({
+                            'name': b.get('name', ''),
+                            'buy_threshold': b.get('threshold', 0),
+                            'sell_threshold': 0,
+                        })
+                    else:
+                        migrated.append(b)
+                return migrated
     except Exception:
         pass
     return []
