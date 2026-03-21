@@ -20,6 +20,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
 .b-p{background:#238636;border-color:#2ea043;color:#fff}.b-p:hover{background:#2ea043}.b-p:disabled{opacity:.5;cursor:default}
 .b-d{background:var(--red);border-color:var(--red);color:#fff}.b-d:hover{background:#da3633}
 .b-wh{background:rgba(255,152,0,.1);border-color:rgba(255,152,0,.35);color:#ff9800;font-weight:700}.b-wh:hover{background:rgba(255,152,0,.2);border-color:#ff9800}
+.b-brain{background:rgba(0,229,255,.08);border-color:rgba(0,229,255,.3);color:var(--fee);font-weight:700}.b-brain:hover{background:rgba(0,229,255,.15);border-color:var(--fee)}.b-brain:disabled{opacity:.5;cursor:default;filter:none}
 .tb{background:var(--bg1);border-bottom:1px solid var(--bd);padding:8px 20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .tb .sep{width:1px;height:24px;background:var(--bd);margin:0 4px}
 .ig{display:flex;align-items:center;gap:4px}.ig label{font-size:12px;color:var(--t2)}.ig input{background:var(--bg0);border:1px solid var(--bd);border-radius:4px;padding:4px 8px;color:var(--t1);font-family:'Cascadia Code',Consolas,monospace;font-size:12px;width:44px;text-align:center;outline:none}.ig input:focus{border-color:var(--blue)}
@@ -42,7 +43,7 @@ tbody td{padding:7px 14px;font-size:13px;border-bottom:1px solid var(--bd);verti
 .es{padding:28px;text-align:center;color:var(--t3);font-size:13px}
 .logs{display:flex;gap:8px;min-height:0}
 .lb{flex:1;overflow-y:auto;padding:6px 12px;font-family:'Cascadia Code',Consolas,monospace;font-size:11px;line-height:1.7}.lb::-webkit-scrollbar{width:4px}.lb::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
-.le{color:var(--t2)}.le.error{color:var(--red)}.le.warning{color:var(--orange)}.le.buy{color:var(--buy);font-weight:600}.le.sell{color:var(--sell);font-weight:600}
+.le{color:var(--t2)}.le.error{color:var(--red)}.le.warning{color:var(--orange)}.le.buy{color:var(--buy);font-weight:600}.le.sell{color:var(--sell);font-weight:600}.le.info{color:var(--fee)}
 
 /* Popups */
 .pop{position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}.pop.active{opacity:1;pointer-events:auto}
@@ -83,10 +84,8 @@ tbody td{padding:7px 14px;font-size:13px;border-bottom:1px solid var(--bd);verti
 .fcal-item{padding:6px 2px;border-radius:6px;cursor:pointer;transition:.2s;display:flex;flex-direction:column;align-items:center;gap:2px}.fcal-item:hover{background:#ff9800;color:#000!important}.fcal-item.today{color:#ff9800;font-weight:900}
 .fcal-profit{font-size:10px;font-weight:800;font-family:'Cascadia Code',monospace;min-height:12px;line-height:1}.fcal-profit.pos{color:var(--green)}.fcal-profit.neg{color:var(--red)}.fcal-item:hover .fcal-profit{color:#000!important}
 
-/* Warehouse body: top=form bar, bottom=log+stock */
+/* Warehouse body */
 .wh-bd{flex:1;display:grid;grid-template-rows:auto 1fr;gap:8px;padding:8px 16px;min-height:0;overflow:hidden}
-
-/* Form bar - horizontal compact */
 .wh-form-bar{background:var(--bgc);border:1px solid var(--bd);border-radius:var(--rl);padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .wh-form-bar .mode-pair{display:flex;gap:4px}
 .mb3{padding:6px 12px;border-radius:5px;font-weight:800;cursor:pointer;text-align:center;border:1px solid transparent;font-size:12px;transition:.2s}
@@ -100,13 +99,12 @@ tbody td{padding:7px 14px;font-size:13px;border-bottom:1px solid var(--bd);verti
 .form-total{font-size:13px;color:var(--t3);font-family:'Cascadia Code',monospace}.form-total b{color:#ff9800}
 .wb2{background:#ff9800;color:#000;border:none;border-radius:6px;font-weight:900;cursor:pointer;padding:7px 20px;font-size:12px;letter-spacing:.5px;transition:.2s}.wb2:hover{filter:brightness(1.1)}.wb2:disabled{background:var(--bg2);color:var(--t3);cursor:not-allowed;filter:none;border:1px solid var(--bd)}
 
-/* Bottom: log wide + stock narrow */
 .wh-bottom{display:grid;grid-template-columns:1fr 280px;gap:8px;min-height:0;overflow:hidden}
 .tle{display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid rgba(255,255,255,.025);font-size:13px}.tle:last-child{border-bottom:none}
 .tlb{font-size:10px;font-weight:900;padding:2px 7px;border-radius:4px;letter-spacing:.5px;flex-shrink:0}.tlb.buy{background:rgba(255,82,82,.1);color:var(--red);border:1px solid rgba(255,82,82,.2)}.tlb.sell{background:rgba(76,175,80,.1);color:var(--green);border:1px solid rgba(76,175,80,.2)}
 .tln{font-weight:700;color:#c0c8d8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tla{font-weight:900;font-family:'Cascadia Code',monospace;font-size:13px}.tla.buy{color:var(--red)}.tla.sell{color:var(--green)}
 .tld{font-size:11px;color:var(--t3);font-family:'Cascadia Code',monospace}.tlt{font-size:10px;color:#3a4456;font-family:'Cascadia Code',monospace}
-.tlx{background:transparent;border:1px solid rgba(255,82,82,.15);color:var(--red);cursor:pointer;border-radius:3px;font-size:13px;padding:1px 6px;opacity:0;transition:.2s;flex-shrink:0}.tle:hover .tlx{opacity:.6}.tlx:hover{opacity:1!important;background:rgba(255,82,82,.1)}
+.tlx{background:transparent;border:1px solid rgba(255,82,82,.15);color:var(--red);cursor:pointer;border-radius:3px;font-size:13px;padding:1px 6px;opacity:0;transition:.2s}.tle:hover .tlx{opacity:.6}.tlx:hover{opacity:1!important;background:rgba(255,82,82,.1)}
 .sg{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:max-content;gap:6px;padding:8px;flex:1;overflow-y:auto}.sg::-webkit-scrollbar{width:4px}.sg::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
 .sit{background:rgba(255,255,255,.03);border:1px solid var(--bd);padding:10px 12px;border-radius:8px;display:flex;flex-direction:column;gap:2px;transition:transform .2s}.sit:hover{transform:translateY(-2px);border-color:rgba(255,152,0,.3)}
 .sin{font-size:11px;color:var(--t3)}.siq{font-size:15px;font-weight:800;font-family:'Cascadia Code',monospace}.sip{font-size:11px;font-weight:600}
@@ -115,7 +113,7 @@ tbody td{padding:7px 14px;font-size:13px;border-bottom:1px solid var(--bd);verti
 </head>
 <body>
 <div class="app">
-<div class="hd"><div class="hd-l"><span class="logo">⚡</span><div><div class="ti">子弹价格闪电监视</div><div class="sub" id="verInfo">webview · 子进程抓取</div></div></div><div class="hd-r"><div id="statusBadge" class="badge badge-idle"><span class="dot"></span><span id="statusText">未启动</span></div><button class="b" onclick="openPop('sellCalc')">💲 抛售计算</button><button class="b" onclick="openPop('profitCalc')">📊 利润计算</button><button class="b b-wh" onclick="openWarehouse()">📦 仓库</button></div></div>
+<div class="hd"><div class="hd-l"><span class="logo">⚡</span><div><div class="ti">子弹价格闪电监视</div><div class="sub" id="verInfo">webview · 子进程抓取</div></div></div><div class="hd-r"><div id="statusBadge" class="badge badge-idle"><span class="dot"></span><span id="statusText">未启动</span></div><button class="b b-brain" id="btnFetchEcon" onclick="doFetchEcon()">📊 拉取数据</button><button class="b" onclick="openPop('sellCalc')">💲 抛售计算</button><button class="b" onclick="openPop('profitCalc')">📊 利润计算</button><button class="b b-wh" onclick="openWarehouse()">📦 仓库</button></div></div>
 <div class="tb"><button id="btnStart" class="b b-p" onclick="doStart()">▶ 开始</button><button id="btnStop" class="b b-d" onclick="doStop()" disabled>⏸ 停止</button><button class="b" onclick="doTest()">🔔 测试</button><div class="sep"></div><div class="ig"><label>间隔</label><input id="intervalInput" type="number" value="10" min="1" max="60"><label>秒</label></div><div class="sep"></div><input id="addInput" class="add-in" placeholder="输入子弹名称..." onkeydown="if(event.key==='Enter')doAdd()"><button class="b b-p" onclick="doAdd()">+ 添加</button></div>
 <div class="main">
   <div class="pn"><div class="ph">监控列表</div><div class="pb"><table><thead><tr><th style="width:20%">子弹名称</th><th style="width:10%">当前价格</th><th style="width:10%" class="thb">买入线↓</th><th style="width:10%" class="ths">卖出线↑</th><th style="width:32%">状态</th><th style="width:8%;text-align:center">操作</th></tr></thead><tbody id="bulletTableBody"><tr><td colspan="6" class="es">暂无监控项</td></tr></tbody></table></div></div>
@@ -149,7 +147,6 @@ tbody td{padding:7px 14px;font-size:13px;border-bottom:1px solid var(--bd);verti
 <div class="fcal" id="fullCal"><div class="fcal-hd"><span onclick="chgMonth(-1)">&lt;</span><span id="calTitle"></span><span onclick="chgMonth(1)">&gt;</span></div><div class="fcal-grid" id="calGrid"></div></div>
 </div>
 <div class="wh-bd">
-  <!-- Top: form bar -->
   <div class="wh-form-bar">
     <div class="mode-pair"><div id="whModeBuy" class="mb3 ab3" onclick="whSetMode(true)">购入</div><div id="whModeSell" class="mb3 in3" onclick="whSetMode(false)">出售</div></div>
     <div class="fi fi-name"><input type="text" id="whName" placeholder="名称" oninput="whChk()"><span class="tag">名称</span></div>
@@ -162,7 +159,6 @@ tbody td{padding:7px 14px;font-size:13px;border-bottom:1px solid var(--bd);verti
     <div class="form-total">合计 <b id="whTotal">0</b></div>
     <button id="whWriteBtn" class="wb2" onclick="whAppend()" disabled>写入</button>
   </div>
-  <!-- Bottom: log + stock -->
   <div class="wh-bottom">
     <div class="pn"><div class="ph" style="justify-content:space-between"><span>操作日志</span><button class="b" style="padding:3px 8px;font-size:11px" onclick="whUndo()">撤销</button></div><div id="whLogBody" class="pb" style="padding:0"></div></div>
     <div class="pn"><div class="ph" style="justify-content:space-between"><span>库存看板</span><span id="whTotalNet" class="wtn">0</span></div><div class="pb"><div id="whStockBoard" class="sg"></div></div></div>
@@ -182,6 +178,21 @@ function fmtC(n){const a=Math.abs(n),s=n>=0?'+':'-';if(a>=1e6)return s+(a/1e6).t
 function openPop(id){document.getElementById('pop'+id.charAt(0).toUpperCase()+id.slice(1)).classList.add('active')}
 function closePop(id){document.getElementById('pop'+id.charAt(0).toUpperCase()+id.slice(1)).classList.remove('active')}
 
+/* ===== Fetch Econ Data ===== */
+async function doFetchEcon(){
+    var btn=document.getElementById('btnFetchEcon');
+    btn.disabled=true;btn.textContent='⏳ 拉取中...';
+    appendLog('[数据] 正在拉取 orzice 经济学数据...');
+    try{
+        var result=await api('fetch_econ_data');
+        if(!result){appendLog('[数据] ❌ 无返回')}
+        else if(result.status==='ok'){appendLogInfo('[数据] ✅ '+result.message)}
+        else if(result.status==='dup'){appendLogInfo('[数据] ℹ️ '+result.message)}
+        else{appendLog('[数据] ❌ '+result.message)}
+    }catch(e){appendLog('[数据] ❌ 异常: '+e)}
+    btn.disabled=false;btn.textContent='📊 拉取数据';
+}
+
 /* Monitor */
 let _mt=null;
 async function doStart(){const iv=parseInt(document.getElementById('intervalInput').value)||3;await api('set_interval',iv);const ok=await api('start_monitor');if(ok){document.getElementById('btnStart').disabled=true;document.getElementById('btnStop').disabled=false;setStatus('run','运行中')}}
@@ -194,6 +205,7 @@ function closeModal(){document.getElementById('thresholdModal').classList.remove
 async function confirmModal(){if(!_mt)return;const v=parseInt(document.getElementById('modalInput').value)||0;if(_mt.type==='buy')await api('set_buy_threshold',_mt.name,v);else await api('set_sell_threshold',_mt.name,v);closeModal();refreshTable()}
 function setStatus(s,t){document.getElementById('statusBadge').className='badge badge-'+(s==='run'?'run':'idle');document.getElementById('statusText').textContent=t}
 function appendLog(m){const b=document.getElementById('logBody'),d=document.createElement('div');d.className='le';if(m.includes('❌'))d.className+=' error';else if(m.includes('⚠'))d.className+=' warning';d.textContent=m;b.appendChild(d);b.scrollTop=b.scrollHeight;while(b.children.length>150)b.removeChild(b.firstChild)}
+function appendLogInfo(m){const b=document.getElementById('logBody'),d=document.createElement('div');d.className='le info';d.textContent=m;b.appendChild(d);b.scrollTop=b.scrollHeight;while(b.children.length>150)b.removeChild(b.firstChild)}
 function appendAlert(m,l){const b=document.getElementById('alertBody'),d=document.createElement('div');d.className='le '+(l||'warning');d.textContent=m;b.appendChild(d);b.scrollTop=b.scrollHeight;while(b.children.length>150)b.removeChild(b.firstChild)}
 async function refreshTable(){const data=await api('get_status');if(!data)return;const tb=document.getElementById('bulletTableBody');if(!data.length){tb.innerHTML='<tr><td colspan="6" class="es">暂无监控项</td></tr>';return}let h='';for(const i of data){const p=i.price!==null?i.price:'—';const bd=i.buy_threshold>0?'<span class="tc bl" onclick="openThresholdModal(\''+i.name+"','buy',"+i.buy_threshold+')">'+i.buy_threshold+'</span>':'<span class="tc un" onclick="openThresholdModal(\''+i.name+"','buy',0)\">设置</span>";const sd=i.sell_threshold>0?'<span class="tc sl" onclick="openThresholdModal(\''+i.name+"','sell',"+i.sell_threshold+')">'+i.sell_threshold+'</span>':'<span class="tc un" onclick="openThresholdModal(\''+i.name+"','sell',0)\">设置</span>";h+='<tr><td class="bn">'+i.name+'</td><td class="pc">'+p+'</td><td>'+bd+'</td><td>'+sd+'</td><td><span class="st '+i.status+'">'+i.status_text+'</span></td><td style="text-align:center"><button class="xb" onclick="doRemove(\''+i.name+'\')">✕</button></td></tr>'}tb.innerHTML=h}
 window.onPyLog=function(m){appendLog(m)};window.onPyAlert=function(m,l){appendAlert(m,l)};window.onPyUpdate=function(){refreshTable()};

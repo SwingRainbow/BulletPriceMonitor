@@ -1,0 +1,4 @@
+# 大脑目录
+# knowledge.md 和 market_data.md 为私有数据，不提交到 git
+# clone 项目后将你的知识库文件复制到此目录即可
+# 运行 python update_brain.py 会自动生成 market_data.md

@@ -29,3 +29,12 @@ config/settings.json
 # PyInstaller
 *.manifest
 *.log
+
+# Brain (私有数据，不提交)
+brain/*
+!brain/.gitkeep
+config/brain_history/
+config/price_history/
+
+# Trade data
+config/trades.txt
