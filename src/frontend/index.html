@@ -5,626 +5,241 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>子弹价格闪电监视</title>
 <style>
-/* ===== Reset & Base ===== */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg0:#0d1117;--bg1:#161b22;--bg2:#21262d;--bgc:#1c2128;--bd:#30363d;--bdl:#3d444d;--t1:#e6edf3;--t2:#8b949e;--t3:#656d76;--blue:#58a6ff;--green:#3fb950;--red:#f85149;--orange:#d29922;--buy:#3fb950;--buy-bg:rgba(63,185,80,.12);--sell:#f0883e;--sell-bg:rgba(240,136,62,.12);--fee:#00e5ff;--r:8px;--rl:12px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Microsoft YaHei',sans-serif;background:var(--bg0);color:var(--t1);line-height:1.5;overflow:hidden;user-select:none;font-size:14px}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none}input[type=number]{-moz-appearance:textfield}
+.app{display:flex;flex-direction:column;height:100vh}
+.hd{background:var(--bg1);border-bottom:1px solid var(--bd);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;-webkit-app-region:drag}
+.hd-l{display:flex;align-items:center;gap:12px}.hd-l .logo{font-size:22px}.hd-l .ti{font-size:15px;font-weight:700;color:var(--blue)}.hd-l .sub{font-size:11px;color:var(--t3)}
+.hd-r{display:flex;align-items:center;gap:8px;-webkit-app-region:no-drag}
+.badge{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px}.badge .dot{width:8px;height:8px;border-radius:50%}
+.badge-idle{background:var(--bg2);color:var(--t2)}.badge-idle .dot{background:var(--t3)}.badge-run{background:rgba(63,185,80,.12);color:var(--green)}.badge-run .dot{background:var(--green);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.b{-webkit-app-region:no-drag;padding:6px 14px;border:1px solid var(--bd);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:.15s;background:var(--bg2);color:var(--t1)}.b:hover{border-color:var(--bdl);background:var(--bd)}.b:active{transform:scale(.97)}
+.b-p{background:#238636;border-color:#2ea043;color:#fff}.b-p:hover{background:#2ea043}.b-p:disabled{opacity:.5;cursor:default}
+.b-d{background:var(--red);border-color:var(--red);color:#fff}.b-d:hover{background:#da3633}
+.b-wh{background:rgba(255,152,0,.1);border-color:rgba(255,152,0,.35);color:#ff9800;font-weight:700}.b-wh:hover{background:rgba(255,152,0,.2);border-color:#ff9800}
+.tb{background:var(--bg1);border-bottom:1px solid var(--bd);padding:8px 20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tb .sep{width:1px;height:24px;background:var(--bd);margin:0 4px}
+.ig{display:flex;align-items:center;gap:4px}.ig label{font-size:12px;color:var(--t2)}.ig input{background:var(--bg0);border:1px solid var(--bd);border-radius:4px;padding:4px 8px;color:var(--t1);font-family:'Cascadia Code',Consolas,monospace;font-size:12px;width:44px;text-align:center;outline:none}.ig input:focus{border-color:var(--blue)}
+.add-in{background:var(--bg0);border:1px solid var(--bd);border-radius:6px;padding:5px 10px;color:var(--t1);font-size:12px;outline:none;width:170px;font-family:'Cascadia Code',Consolas,monospace}.add-in:focus{border-color:var(--blue)}.add-in::placeholder{color:var(--t3)}
+.main{flex:1;display:grid;grid-template-columns:1fr;grid-template-rows:1fr 170px;gap:8px;padding:8px 14px;min-height:0;overflow:hidden}
+.pn{background:var(--bgc);border:1px solid var(--bd);border-radius:var(--rl);display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.ph{padding:8px 14px;font-size:12px;font-weight:600;color:var(--t2);background:var(--bg2);border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:6px;text-transform:uppercase;letter-spacing:.5px;flex-shrink:0}
+.pb{flex:1;overflow-y:auto;min-height:0}.pb::-webkit-scrollbar{width:5px}.pb::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
+table{width:100%;border-collapse:collapse}
+thead th{background:var(--bg2);padding:8px 14px;font-size:11px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;text-align:left;border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:1}
+thead th.thb{color:var(--buy)}thead th.ths{color:var(--sell)}
+tbody td{padding:7px 14px;font-size:13px;border-bottom:1px solid var(--bd);vertical-align:middle}tbody tr:last-child td{border-bottom:none}tbody tr:hover{background:rgba(88,166,255,.04)}
+.bn{font-weight:600;font-family:'Cascadia Code',monospace}.pc{font-family:'Cascadia Code',monospace;font-weight:600;color:var(--orange)}
+.tc{cursor:pointer;font-family:'Cascadia Code',monospace;transition:.15s}.tc:hover{text-decoration:underline}.tc.un{color:var(--t3);font-style:italic;font-family:inherit}.tc.bl{color:var(--buy)}.tc.sl{color:var(--sell)}
+.st{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600}
+.st.waiting{background:var(--bg2);color:var(--t3)}.st.stable{background:rgba(63,185,80,.1);color:var(--green)}.st.up{background:rgba(248,81,73,.1);color:var(--red)}.st.down{background:rgba(88,166,255,.1);color:var(--blue)}
+.st.buy_signal{background:var(--buy-bg);color:var(--buy);font-weight:700;animation:fl 1s infinite}.st.sell_signal{background:var(--sell-bg);color:var(--sell);font-weight:700;animation:fl 1s infinite}
+@keyframes fl{0%,100%{opacity:1}50%{opacity:.6}}
+.xb{background:none;border:none;color:var(--t3);cursor:pointer;padding:4px;border-radius:4px;font-size:14px;transition:.15s}.xb:hover{color:var(--red);background:rgba(248,81,73,.1)}
+.es{padding:28px;text-align:center;color:var(--t3);font-size:13px}
+.logs{display:flex;gap:8px;min-height:0}
+.lb{flex:1;overflow-y:auto;padding:6px 12px;font-family:'Cascadia Code',Consolas,monospace;font-size:11px;line-height:1.7}.lb::-webkit-scrollbar{width:4px}.lb::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
+.le{color:var(--t2)}.le.error{color:var(--red)}.le.warning{color:var(--orange)}.le.buy{color:var(--buy);font-weight:600}.le.sell{color:var(--sell);font-weight:600}
 
-:root {
-  --bg-primary: #0d1117;
-  --bg-secondary: #161b22;
-  --bg-tertiary: #21262d;
-  --bg-card: #1c2128;
-  --border: #30363d;
-  --border-light: #3d444d;
-  --text-primary: #e6edf3;
-  --text-secondary: #8b949e;
-  --text-muted: #656d76;
-  --accent-blue: #58a6ff;
-  --accent-green: #3fb950;
-  --accent-red: #f85149;
-  --accent-orange: #d29922;
-  --accent-purple: #bc8cff;
-  --color-buy: #3fb950;
-  --color-buy-bg: rgba(63,185,80,.12);
-  --color-sell: #f0883e;
-  --color-sell-bg: rgba(240,136,62,.12);
-  --shadow: 0 2px 8px rgba(0,0,0,.3);
-  --radius: 8px;
-  --radius-lg: 12px;
-}
+/* Popups */
+.pop{position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}.pop.active{opacity:1;pointer-events:auto}
+.pop-bk{position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(5px)}
+.pop-card{position:relative;z-index:1;background:linear-gradient(145deg,rgba(22,26,33,.97),rgba(10,12,16,.98));border:1px solid rgba(255,152,0,.2);border-radius:16px;padding:28px 34px;box-shadow:0 16px 50px rgba(0,0,0,.5);transform:scale(.93) translateY(12px);transition:transform .3s cubic-bezier(.34,1.56,.64,1);overflow:visible;max-height:90vh}
+.pop.active .pop-card{transform:scale(1) translateY(0)}
+.pop-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.06)}
+.pop-hd h3{font-size:15px;font-weight:900;color:#ff9800;letter-spacing:1px;margin:0;display:flex;align-items:center;gap:7px}.pop-hd h3::before{content:'';width:3px;height:15px;background:#ff9800;border-radius:2px}
+.pop-close{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:#777;font-size:15px;cursor:pointer;display:grid;place-items:center;transition:.2s}.pop-close:hover{background:rgba(248,81,73,.12);border-color:rgba(248,81,73,.3);color:var(--red)}
+.calc-row{display:flex;gap:10px;margin-bottom:14px}
+.calc-in{flex:1;background:rgba(0,0,0,.35);border:1px solid var(--bd);border-radius:8px;padding:10px 14px;color:#fff;font-size:16px;font-weight:700;outline:none;font-family:'Cascadia Code',Consolas,monospace;text-align:center}.calc-in:focus{border-color:var(--blue)}.calc-in::placeholder{color:var(--t3);font-weight:400;font-size:13px}
+.calc-result{text-align:center;padding:10px 0}
+.calc-big{font-size:32px;font-weight:900;font-family:'Cascadia Code',monospace}.calc-sub{font-size:13px;color:var(--t2);margin-top:6px}
+.calc-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:14px}
+.calc-stat{text-align:center;padding:10px;background:rgba(255,255,255,.02);border-radius:8px;border:1px solid rgba(255,255,255,.04)}
+.calc-stat .cs-label{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}.calc-stat .cs-val{font-size:16px;font-weight:800;font-family:'Cascadia Code',monospace}
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  line-height: 1.5;
-  overflow-x: hidden;
-  user-select: none;
-}
+/* Modal */
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:4000;opacity:0;pointer-events:none;transition:opacity .2s}.mo.active{opacity:1;pointer-events:auto}
+.md{background:var(--bg1);border:1px solid var(--bd);border-radius:var(--rl);padding:20px;width:320px}
+.md h3{font-size:15px;margin-bottom:10px}.md h3.mb{color:var(--buy)}.md h3.ms{color:var(--sell)}
+.md input{width:100%;background:var(--bg0);border:1px solid var(--bd);border-radius:6px;padding:8px 12px;color:var(--t1);font-family:'Cascadia Code',monospace;font-size:14px;outline:none;margin-bottom:12px}.md input:focus{border-color:var(--blue)}
+.md .hint{font-size:12px;color:var(--t3);margin-bottom:8px}.ma{display:flex;gap:8px;justify-content:flex-end}
 
-/* ===== Layout ===== */
-.app { display: flex; flex-direction: column; height: 100vh; }
+/* ═══ WAREHOUSE ═══ */
+.wh{position:fixed;inset:0;z-index:2000;background:var(--bg0);display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .3s}.wh.active{opacity:1;pointer-events:auto}
+.wh-hd{background:rgba(0,0,0,.4);border-bottom:1px solid rgba(255,152,0,.15);padding:10px 20px;display:flex;align-items:center;gap:12px;position:relative}
+.wh-ti{font-size:16px;font-weight:900;color:#ff9800;letter-spacing:2px}
+.wh-file{display:flex;align-items:center;gap:6px}.wh-file .dot{width:8px;height:8px;border-radius:50%;background:#333}.wh-file .fn{font-size:12px;color:var(--t3)}
+.wh-hd-r{margin-left:auto;display:flex;align-items:center;gap:8px}
+.ch{display:flex;align-items:center;background:rgba(0,0,0,.5);border-radius:8px;padding:0 12px;height:36px;border:1px solid rgba(255,255,255,.05);flex:1;min-width:0;margin:0 12px}
+.ym{display:flex;align-items:center;gap:6px;font-weight:900;color:#ff9800;font-size:16px;cursor:pointer;padding-right:12px;border-right:1px solid #333;flex-shrink:0}.ym:hover{color:#fff}
+.ds{flex:1;display:flex;overflow-x:auto;padding:0 8px;align-items:center;gap:2px;scrollbar-width:none;scroll-behavior:smooth}.ds::-webkit-scrollbar{display:none}
+.dn{width:28px;min-width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#444;cursor:pointer;border-radius:50%;flex-shrink:0;transition:.2s}.dn:hover{color:#fff;background:rgba(255,152,0,.15)}.dn.active{color:#000;background:#ff9800}.dn.today:not(.active){color:#fff}.dn.has-inc:not(.active){color:var(--green)}.dn.has-exp:not(.active){color:var(--red)}
+.fcal{position:absolute;top:52px;left:50%;transform:translateX(-50%);width:340px;background:#161a21;border:1px solid #ff9800;border-radius:12px;padding:16px;display:none;box-shadow:0 10px 40px rgba(0,0,0,.7);z-index:3000}
+.fcal-hd{display:flex;justify-content:space-between;margin-bottom:10px;color:#ff9800;font-weight:bold;font-size:14px}.fcal-hd span{cursor:pointer;padding:2px 8px}.fcal-hd span:hover{color:#fff}
+.fcal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center;font-size:13px}
+.fcal-item{padding:6px 2px;border-radius:6px;cursor:pointer;transition:.2s;display:flex;flex-direction:column;align-items:center;gap:2px}.fcal-item:hover{background:#ff9800;color:#000!important}.fcal-item.today{color:#ff9800;font-weight:900}
+.fcal-profit{font-size:10px;font-weight:800;font-family:'Cascadia Code',monospace;min-height:12px;line-height:1}.fcal-profit.pos{color:var(--green)}.fcal-profit.neg{color:var(--red)}.fcal-item:hover .fcal-profit{color:#000!important}
 
-/* ===== Header ===== */
-.header {
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border);
-  padding: 12px 20px;
-  display: flex; align-items: center; justify-content: space-between;
-  -webkit-app-region: drag;
-}
-.header-left { display: flex; align-items: center; gap: 12px; }
-.logo { font-size: 22px; line-height: 1; }
-.title-group { display: flex; flex-direction: column; }
-.title { font-size: 15px; font-weight: 700; color: var(--accent-blue); }
-.subtitle { font-size: 11px; color: var(--text-muted); letter-spacing: .5px; }
-.status-badge {
-  -webkit-app-region: no-drag;
-  padding: 4px 12px; border-radius: 20px;
-  font-size: 12px; font-weight: 600;
-  display: flex; align-items: center; gap: 6px;
-}
-.status-badge .dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  display: inline-block;
-}
-.status-idle { background: var(--bg-tertiary); color: var(--text-secondary); }
-.status-idle .dot { background: var(--text-muted); }
-.status-running { background: rgba(63,185,80,.12); color: var(--accent-green); }
-.status-running .dot { background: var(--accent-green); animation: pulse 1.5s infinite; }
-.status-error { background: rgba(248,81,73,.12); color: var(--accent-red); }
-.status-error .dot { background: var(--accent-red); }
+/* Warehouse body: top=form bar, bottom=log+stock */
+.wh-bd{flex:1;display:grid;grid-template-rows:auto 1fr;gap:8px;padding:8px 16px;min-height:0;overflow:hidden}
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: .4; }
-}
+/* Form bar - horizontal compact */
+.wh-form-bar{background:var(--bgc);border:1px solid var(--bd);border-radius:var(--rl);padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.wh-form-bar .mode-pair{display:flex;gap:4px}
+.mb3{padding:6px 12px;border-radius:5px;font-weight:800;cursor:pointer;text-align:center;border:1px solid transparent;font-size:12px;transition:.2s}
+.mb3.ab3{background:rgba(255,82,82,.1);color:var(--red);border-color:rgba(255,82,82,.3)}.mb3.as3{background:rgba(76,175,80,.1);color:var(--green);border-color:rgba(76,175,80,.3)}.mb3.in3{background:rgba(255,255,255,.02);color:var(--t3);border-color:rgba(255,255,255,.04)}
+.fi{background:rgba(0,0,0,.3);border:1px solid var(--bd);border-radius:5px;display:flex;align-items:center;transition:border-color .2s}.fi:focus-within{border-color:#ff9800}
+.fi input{background:transparent;border:none;outline:none;color:#fff;padding:6px 8px;font-size:13px;font-weight:700;width:100%}
+.fi .tag{padding:0 8px;font-size:10px;color:var(--t3);font-weight:600;white-space:nowrap;border-left:1px solid var(--bd)}
+.fi-name{width:130px}.fi-price{width:90px}.fi-qty{width:80px}.fi-env{width:70px}
+.qty-group{display:flex;align-items:center;gap:0}
+.qty-plus{color:var(--t3);font-size:14px;font-weight:900;padding:0 6px}
+.form-total{font-size:13px;color:var(--t3);font-family:'Cascadia Code',monospace}.form-total b{color:#ff9800}
+.wb2{background:#ff9800;color:#000;border:none;border-radius:6px;font-weight:900;cursor:pointer;padding:7px 20px;font-size:12px;letter-spacing:.5px;transition:.2s}.wb2:hover{filter:brightness(1.1)}.wb2:disabled{background:var(--bg2);color:var(--t3);cursor:not-allowed;filter:none;border:1px solid var(--bd)}
 
-/* ===== Toolbar ===== */
-.toolbar {
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border);
-  padding: 8px 20px;
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-}
-.btn {
-  -webkit-app-region: no-drag;
-  padding: 6px 14px; border: 1px solid var(--border);
-  border-radius: 6px; font-size: 12px; font-weight: 600;
-  cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
-  transition: all .15s; background: var(--bg-tertiary); color: var(--text-primary);
-}
-.btn:hover { border-color: var(--border-light); background: var(--border); }
-.btn:active { transform: scale(.97); }
-.btn-primary { background: #238636; border-color: #2ea043; color: #fff; }
-.btn-primary:hover { background: #2ea043; }
-.btn-primary:disabled { opacity: .5; cursor: default; }
-.btn-danger { background: var(--accent-red); border-color: var(--accent-red); color: #fff; }
-.btn-danger:hover { background: #da3633; }
-.btn-warn { background: var(--accent-orange); border-color: var(--accent-orange); color: #fff; }
-.btn-warn:hover { opacity: .9; }
-
-.toolbar .separator { width: 1px; height: 24px; background: var(--border); margin: 0 4px; }
-
-.input-group {
-  display: flex; align-items: center; gap: 4px;
-}
-.input-group label { font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
-.input-group input {
-  background: var(--bg-primary); border: 1px solid var(--border);
-  border-radius: 4px; padding: 4px 8px; color: var(--text-primary);
-  font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 12px;
-  width: 44px; text-align: center; outline: none;
-}
-.input-group input:focus { border-color: var(--accent-blue); }
-
-.add-input {
-  background: var(--bg-primary); border: 1px solid var(--border);
-  border-radius: 6px; padding: 5px 10px; color: var(--text-primary);
-  font-size: 12px; outline: none; width: 180px;
-  font-family: 'Cascadia Code', 'Consolas', monospace;
-}
-.add-input:focus { border-color: var(--accent-blue); }
-.add-input::placeholder { color: var(--text-muted); }
-
-/* ===== Stats Bar ===== */
-.stats-bar {
-  display: flex; gap: 12px; padding: 10px 20px;
-  background: var(--bg-primary);
-}
-.stat-card {
-  flex: 1; background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 10px 14px;
-  display: flex; align-items: center; gap: 10px;
-}
-.stat-icon {
-  width: 36px; height: 36px; border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 16px;
-}
-.stat-icon.blue { background: rgba(88,166,255,.12); }
-.stat-icon.green { background: rgba(63,185,80,.12); }
-.stat-icon.red { background: rgba(248,81,73,.12); }
-.stat-icon.orange { background: rgba(210,153,34,.12); }
-.stat-info { display: flex; flex-direction: column; }
-.stat-value { font-size: 18px; font-weight: 700; font-family: 'Cascadia Code', monospace; }
-.stat-label { font-size: 11px; color: var(--text-secondary); }
-
-/* ===== Main Content ===== */
-.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 0 20px; }
-
-/* ===== Table ===== */
-.table-section { margin-top: 10px; }
-.table-header {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 6px;
-}
-.table-title { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
-
-.table-wrap {
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: var(--radius-lg); overflow: hidden;
-}
-
-table { width: 100%; border-collapse: collapse; }
-thead th {
-  background: var(--bg-tertiary); padding: 8px 14px;
-  font-size: 11px; font-weight: 600; color: var(--text-secondary);
-  text-transform: uppercase; letter-spacing: .5px;
-  text-align: left; border-bottom: 1px solid var(--border);
-}
-/* 买入线/卖出线表头颜色标记 */
-thead th.th-buy { color: var(--color-buy); }
-thead th.th-sell { color: var(--color-sell); }
-
-tbody td {
-  padding: 8px 14px; font-size: 13px; border-bottom: 1px solid var(--border);
-  vertical-align: middle;
-}
-tbody tr:last-child td { border-bottom: none; }
-tbody tr:hover { background: rgba(88,166,255,.04); }
-
-.bullet-name {
-  font-weight: 600; font-family: 'Cascadia Code', monospace;
-}
-.price-cell {
-  font-family: 'Cascadia Code', monospace; font-weight: 600;
-  color: var(--accent-orange);
-}
-
-/* 买入线/卖出线可点击单元格 */
-.threshold-cell {
-  cursor: pointer; font-family: 'Cascadia Code', monospace;
-  transition: color .15s;
-}
-.threshold-cell:hover { text-decoration: underline; }
-.threshold-cell.unset { color: var(--text-muted); font-style: italic; font-family: inherit; }
-.threshold-cell.buy-line { color: var(--color-buy); }
-.threshold-cell.sell-line { color: var(--color-sell); }
-
-/* 状态标签 */
-.status-tag {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;
-}
-.status-tag.waiting { background: var(--bg-tertiary); color: var(--text-muted); }
-.status-tag.stable { background: rgba(63,185,80,.1); color: var(--accent-green); }
-.status-tag.up { background: rgba(248,81,73,.1); color: var(--accent-red); }
-.status-tag.down { background: rgba(88,166,255,.1); color: var(--accent-blue); }
-.status-tag.buy_signal {
-  background: var(--color-buy-bg); color: var(--color-buy);
-  font-weight: 700; animation: flash-buy 1s infinite;
-}
-.status-tag.sell_signal {
-  background: var(--color-sell-bg); color: var(--color-sell);
-  font-weight: 700; animation: flash-sell 1s infinite;
-}
-
-@keyframes flash-buy {
-  0%, 100% { opacity: 1; }
-  50% { opacity: .6; }
-}
-@keyframes flash-sell {
-  0%, 100% { opacity: 1; }
-  50% { opacity: .6; }
-}
-
-.action-btn {
-  background: none; border: none; color: var(--text-muted);
-  cursor: pointer; padding: 4px; border-radius: 4px; font-size: 14px;
-  transition: all .15s;
-}
-.action-btn:hover { color: var(--accent-red); background: rgba(248,81,73,.1); }
-
-.empty-state {
-  padding: 30px; text-align: center; color: var(--text-muted);
-  font-size: 13px;
-}
-
-/* ===== Logs ===== */
-.logs-section {
-  flex: 1; display: flex; gap: 12px; margin: 10px 0;
-  min-height: 0;
-}
-.log-panel {
-  flex: 1; display: flex; flex-direction: column;
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: var(--radius-lg); overflow: hidden;
-  min-height: 0;
-}
-.log-header {
-  padding: 8px 14px; font-size: 12px; font-weight: 600;
-  background: var(--bg-tertiary); border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; gap: 6px;
-}
-.log-header .icon { font-size: 14px; }
-.log-body {
-  flex: 1; overflow-y: auto; padding: 8px 12px;
-  font-family: 'Cascadia Code', 'Consolas', monospace;
-  font-size: 11px; line-height: 1.6;
-}
-.log-body::-webkit-scrollbar { width: 6px; }
-.log-body::-webkit-scrollbar-track { background: transparent; }
-.log-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-.log-entry { color: var(--text-secondary); }
-.log-entry.error { color: var(--accent-red); }
-.log-entry.warning { color: var(--accent-orange); }
-.log-entry.buy { color: var(--color-buy); font-weight: 600; }
-.log-entry.sell { color: var(--color-sell); font-weight: 600; }
-.log-entry.critical { color: var(--accent-red); font-weight: 700; }
-
-.alert-panel .log-header { color: var(--accent-orange); }
-
-/* ===== Modal ===== */
-.modal-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,.6);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 1000; opacity: 0; pointer-events: none; transition: opacity .2s;
-}
-.modal-overlay.active { opacity: 1; pointer-events: auto; }
-.modal {
-  background: var(--bg-secondary); border: 1px solid var(--border);
-  border-radius: var(--radius-lg); padding: 20px; width: 340px;
-  box-shadow: 0 8px 32px rgba(0,0,0,.5);
-}
-.modal h3 { font-size: 15px; margin-bottom: 12px; }
-.modal h3.modal-buy { color: var(--color-buy); }
-.modal h3.modal-sell { color: var(--color-sell); }
-.modal input {
-  width: 100%; background: var(--bg-primary); border: 1px solid var(--border);
-  border-radius: 6px; padding: 8px 12px; color: var(--text-primary);
-  font-family: 'Cascadia Code', monospace; font-size: 14px;
-  outline: none; margin-bottom: 14px;
-}
-.modal input:focus { border-color: var(--accent-blue); }
-.modal input.input-buy:focus { border-color: var(--color-buy); }
-.modal input.input-sell:focus { border-color: var(--color-sell); }
-.modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
-.modal p.hint { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
+/* Bottom: log wide + stock narrow */
+.wh-bottom{display:grid;grid-template-columns:1fr 280px;gap:8px;min-height:0;overflow:hidden}
+.tle{display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid rgba(255,255,255,.025);font-size:13px}.tle:last-child{border-bottom:none}
+.tlb{font-size:10px;font-weight:900;padding:2px 7px;border-radius:4px;letter-spacing:.5px;flex-shrink:0}.tlb.buy{background:rgba(255,82,82,.1);color:var(--red);border:1px solid rgba(255,82,82,.2)}.tlb.sell{background:rgba(76,175,80,.1);color:var(--green);border:1px solid rgba(76,175,80,.2)}
+.tln{font-weight:700;color:#c0c8d8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tla{font-weight:900;font-family:'Cascadia Code',monospace;font-size:13px}.tla.buy{color:var(--red)}.tla.sell{color:var(--green)}
+.tld{font-size:11px;color:var(--t3);font-family:'Cascadia Code',monospace}.tlt{font-size:10px;color:#3a4456;font-family:'Cascadia Code',monospace}
+.tlx{background:transparent;border:1px solid rgba(255,82,82,.15);color:var(--red);cursor:pointer;border-radius:3px;font-size:13px;padding:1px 6px;opacity:0;transition:.2s;flex-shrink:0}.tle:hover .tlx{opacity:.6}.tlx:hover{opacity:1!important;background:rgba(255,82,82,.1)}
+.sg{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:max-content;gap:6px;padding:8px;flex:1;overflow-y:auto}.sg::-webkit-scrollbar{width:4px}.sg::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
+.sit{background:rgba(255,255,255,.03);border:1px solid var(--bd);padding:10px 12px;border-radius:8px;display:flex;flex-direction:column;gap:2px;transition:transform .2s}.sit:hover{transform:translateY(-2px);border-color:rgba(255,152,0,.3)}
+.sin{font-size:11px;color:var(--t3)}.siq{font-size:15px;font-weight:800;font-family:'Cascadia Code',monospace}.sip{font-size:11px;font-weight:600}
+.wtn{font-size:16px;font-weight:900;color:#ff9800;font-family:'Cascadia Code',monospace}
 </style>
 </head>
 <body>
 <div class="app">
-
-  <!-- Header -->
-  <div class="header">
-    <div class="header-left">
-      <span class="logo">⚡</span>
-      <div class="title-group">
-        <span class="title">子弹价格闪电监视 v3</span>
-        <span class="subtitle" id="verInfo">webview · 子进程抓取 · 秒级刷新</span>
-      </div>
-    </div>
-    <div id="statusBadge" class="status-badge status-idle">
-      <span class="dot"></span>
-      <span id="statusText">未启动</span>
-    </div>
-  </div>
-
-  <!-- Toolbar -->
-  <div class="toolbar">
-    <button id="btnStart" class="btn btn-primary" onclick="doStart()">▶ 开始</button>
-    <button id="btnStop" class="btn btn-danger" onclick="doStop()" disabled>⏸ 停止</button>
-    <button class="btn" onclick="doTest()">🔔 测试</button>
-    <div class="separator"></div>
-    <div class="input-group">
-      <label>间隔</label>
-      <input id="intervalInput" type="number" value="10" min="1" max="60">
-      <label>秒</label>
-    </div>
-    <div class="separator"></div>
-    <input id="addInput" class="add-input" placeholder="输入子弹名称..." onkeydown="if(event.key==='Enter')doAdd()">
-    <button class="btn btn-primary" onclick="doAdd()">➕ 添加</button>
-  </div>
-
-  <!-- Stats -->
-  <div class="stats-bar">
-    <div class="stat-card">
-      <div class="stat-icon blue">📋</div>
-      <div class="stat-info">
-        <span id="statTotal" class="stat-value">0</span>
-        <span class="stat-label">监控总数</span>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon green">💰</div>
-      <div class="stat-info">
-        <span id="statBuy" class="stat-value">0</span>
-        <span class="stat-label">买入机会</span>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon orange">🔥</div>
-      <div class="stat-info">
-        <span id="statSell" class="stat-value">0</span>
-        <span class="stat-label">卖出机会</span>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon red">⏱</div>
-      <div class="stat-info">
-        <span id="statSpeed" class="stat-value">—</span>
-        <span class="stat-label">响应速度</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Main content -->
-  <div class="main">
-    <!-- Bullet Table -->
-    <div class="table-section">
-      <div class="table-header">
-        <span class="table-title">监控列表（点击买入线/卖出线可编辑）</span>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th style="width:22%">子弹名称</th>
-              <th style="width:12%">当前价格</th>
-              <th style="width:12%" class="th-buy">买入线 ↓</th>
-              <th style="width:12%" class="th-sell">卖出线 ↑</th>
-              <th style="width:30%">状态</th>
-              <th style="width:12%; text-align:center">操作</th>
-            </tr>
-          </thead>
-          <tbody id="bulletTableBody">
-            <tr><td colspan="6" class="empty-state">暂无监控项，请添加子弹名称</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Logs -->
-    <div class="logs-section">
-      <div class="log-panel">
-        <div class="log-header"><span class="icon">📝</span> 运行日志</div>
-        <div id="logBody" class="log-body"></div>
-      </div>
-      <div class="log-panel alert-panel">
-        <div class="log-header"><span class="icon">📊</span> 买卖信号</div>
-        <div id="alertBody" class="log-body"></div>
-      </div>
-    </div>
-  </div>
+<div class="hd"><div class="hd-l"><span class="logo">⚡</span><div><div class="ti">子弹价格闪电监视</div><div class="sub" id="verInfo">webview · 子进程抓取</div></div></div><div class="hd-r"><div id="statusBadge" class="badge badge-idle"><span class="dot"></span><span id="statusText">未启动</span></div><button class="b" onclick="openPop('sellCalc')">💲 抛售计算</button><button class="b" onclick="openPop('profitCalc')">📊 利润计算</button><button class="b b-wh" onclick="openWarehouse()">📦 仓库</button></div></div>
+<div class="tb"><button id="btnStart" class="b b-p" onclick="doStart()">▶ 开始</button><button id="btnStop" class="b b-d" onclick="doStop()" disabled>⏸ 停止</button><button class="b" onclick="doTest()">🔔 测试</button><div class="sep"></div><div class="ig"><label>间隔</label><input id="intervalInput" type="number" value="10" min="1" max="60"><label>秒</label></div><div class="sep"></div><input id="addInput" class="add-in" placeholder="输入子弹名称..." onkeydown="if(event.key==='Enter')doAdd()"><button class="b b-p" onclick="doAdd()">+ 添加</button></div>
+<div class="main">
+  <div class="pn"><div class="ph">监控列表</div><div class="pb"><table><thead><tr><th style="width:20%">子弹名称</th><th style="width:10%">当前价格</th><th style="width:10%" class="thb">买入线↓</th><th style="width:10%" class="ths">卖出线↑</th><th style="width:32%">状态</th><th style="width:8%;text-align:center">操作</th></tr></thead><tbody id="bulletTableBody"><tr><td colspan="6" class="es">暂无监控项</td></tr></tbody></table></div></div>
+  <div class="logs"><div class="pn" style="flex:1"><div class="ph">📝 运行日志</div><div id="logBody" class="pb lb"></div></div><div class="pn" style="flex:1"><div class="ph" style="color:var(--orange)">📊 买卖信号</div><div id="alertBody" class="pb lb"></div></div></div>
 </div>
+</div>
+
+<!-- Sell Calc -->
+<div class="pop" id="popSellCalc" onclick="if(event.target===this||event.target.classList.contains('pop-bk'))closePop('sellCalc')"><div class="pop-bk"></div>
+<div class="pop-card" style="width:500px;min-width:500px"><div class="pop-hd"><h3>抛售价格计算</h3><button class="pop-close" onclick="closePop('sellCalc')">✕</button></div>
+<div class="calc-row"><input type="number" id="p1" class="calc-in" placeholder="一柱 (最低价)" oninput="updateSellCalc()"><input type="number" id="p2" class="calc-in" placeholder="二柱 (对比价)" oninput="updateSellCalc()"></div>
+<div class="calc-result"><div style="font-size:12px;color:var(--t3);margin-bottom:6px">建议抛售价</div><div id="sugVal" class="calc-big" style="color:var(--buy);cursor:pointer" onclick="applyQuick()">--</div><div class="calc-sub">点击填入出售单价并打开利润计算</div></div>
+</div></div>
+
+<!-- Profit Calc -->
+<div class="pop" id="popProfitCalc" onclick="if(event.target===this||event.target.classList.contains('pop-bk'))closePop('profitCalc')"><div class="pop-bk"></div>
+<div class="pop-card" style="width:520px;min-width:520px"><div class="pop-hd"><h3>利润计算</h3><button class="pop-close" onclick="closePop('profitCalc')">✕</button></div>
+<div class="calc-row"><input type="number" id="buyPrice" class="calc-in" placeholder="购入单价" oninput="updateProfitCalc()"><input type="number" id="sellPrice" class="calc-in" placeholder="出售单价" oninput="updateProfitCalc()"></div>
+<div class="calc-result"><div id="profit" class="calc-big" style="color:var(--t3)">+0</div><div id="roi" class="calc-sub">ROI 0.0%</div></div>
+<div class="calc-grid"><div class="calc-stat"><div class="cs-label">回本价</div><div id="beInfo" class="cs-val" style="color:var(--orange)">--</div></div><div class="calc-stat"><div class="cs-label">手续费</div><div id="feeShow" class="cs-val" style="color:var(--fee)">0</div></div><div class="calc-stat"><div class="cs-label">保证金</div><div id="depShow" class="cs-val" style="color:var(--fee)">0</div></div></div>
+</div></div>
 
 <!-- Threshold Modal -->
-<div id="thresholdModal" class="modal-overlay" onclick="if(event.target===this)closeModal()">
-  <div class="modal">
-    <h3 id="modalTitle">设置阈值</h3>
-    <p id="modalHint" class="hint">设为 0 = 不检测</p>
-    <input id="modalInput" type="number" min="0" placeholder="0"
-           onkeydown="if(event.key==='Enter')confirmModal()">
-    <div class="modal-actions">
-      <button class="btn" onclick="closeModal()">取消</button>
-      <button class="btn btn-primary" onclick="confirmModal()">确定</button>
+<div id="thresholdModal" class="mo" onclick="if(event.target===this)closeModal()"><div class="md"><h3 id="modalTitle">设置</h3><p id="modalHint" class="hint"></p><input id="modalInput" type="number" min="0" placeholder="0" onkeydown="if(event.key==='Enter')confirmModal()"><div class="ma"><button class="b" onclick="closeModal()">取消</button><button class="b b-p" onclick="confirmModal()">确定</button></div></div></div>
+
+<!-- ═══ WAREHOUSE ═══ -->
+<div class="wh" id="whOverlay">
+<div class="wh-hd"><span style="font-size:20px">📦</span><span class="wh-ti">仓库</span><div class="wh-file"><div class="dot" id="whFileDot"></div><span class="fn" id="whFileName">未连接</span></div>
+<div class="ch"><div class="ym" onclick="toggleFullCal()"><span id="whYear"></span><span style="opacity:.3">|</span><span id="whMonth"></span></div><div class="ds" id="whDateSlider"></div></div>
+<div class="wh-hd-r"><button class="b" onclick="whOpenFile()">打开文件</button><button class="b b-wh" style="font-size:12px" onclick="whCreateFile()">新建</button><div class="sep" style="height:24px"></div><button class="b" onclick="openSubPanel('holdings')">持仓分布</button><button class="b" onclick="openSubPanel('global')">全局数据</button><button class="pop-close" onclick="closeWarehouse()">✕</button></div>
+<div class="fcal" id="fullCal"><div class="fcal-hd"><span onclick="chgMonth(-1)">&lt;</span><span id="calTitle"></span><span onclick="chgMonth(1)">&gt;</span></div><div class="fcal-grid" id="calGrid"></div></div>
+</div>
+<div class="wh-bd">
+  <!-- Top: form bar -->
+  <div class="wh-form-bar">
+    <div class="mode-pair"><div id="whModeBuy" class="mb3 ab3" onclick="whSetMode(true)">购入</div><div id="whModeSell" class="mb3 in3" onclick="whSetMode(false)">出售</div></div>
+    <div class="fi fi-name"><input type="text" id="whName" placeholder="名称" oninput="whChk()"><span class="tag">名称</span></div>
+    <div class="fi fi-price"><input type="number" id="whPrice" placeholder="单价" oninput="whUpT();whChk()"><span class="tag">单价</span></div>
+    <div class="qty-group">
+      <div class="fi fi-qty"><input type="number" id="whQty" placeholder="数量" oninput="whUpT();whChk()"><span class="tag">发</span></div>
+      <span class="qty-plus">+</span>
+      <div class="fi fi-env"><input type="number" id="whEnv" placeholder="0" oninput="whUpT();whChk()"><span class="tag">封</span></div>
     </div>
+    <div class="form-total">合计 <b id="whTotal">0</b></div>
+    <button id="whWriteBtn" class="wb2" onclick="whAppend()" disabled>写入</button>
+  </div>
+  <!-- Bottom: log + stock -->
+  <div class="wh-bottom">
+    <div class="pn"><div class="ph" style="justify-content:space-between"><span>操作日志</span><button class="b" style="padding:3px 8px;font-size:11px" onclick="whUndo()">撤销</button></div><div id="whLogBody" class="pb" style="padding:0"></div></div>
+    <div class="pn"><div class="ph" style="justify-content:space-between"><span>库存看板</span><span id="whTotalNet" class="wtn">0</span></div><div class="pb"><div id="whStockBoard" class="sg"></div></div></div>
   </div>
 </div>
+</div>
+
+<!-- Sub: Holdings -->
+<div class="pop" id="subHoldings" onclick="if(event.target===this||event.target.classList.contains('pop-bk'))closeSubPanel('holdings')"><div class="pop-bk"></div><div class="pop-card" style="width:min(680px,94vw);max-height:85vh;overflow-y:auto"><div class="pop-hd"><h3>持仓分布</h3><button class="pop-close" onclick="closeSubPanel('holdings')">✕</button></div><div id="holdingsContent"></div></div></div>
+<div class="pop" id="subGlobal" onclick="if(event.target===this||event.target.classList.contains('pop-bk'))closeSubPanel('global')"><div class="pop-bk"></div><div class="pop-card" style="width:min(680px,94vw);max-height:85vh;overflow-y:auto"><div class="pop-hd"><h3 style="color:var(--fee)">全局数据</h3><button class="pop-close" onclick="closeSubPanel('global')">✕</button></div><div id="globalContent"></div></div></div>
 
 <script>
-// ========== State ==========
-let _modalTarget = null;   // {name, type: 'buy'|'sell'}
+const ENV_SIZE=4440;
+async function api(m,...a){if(window.pywebview&&window.pywebview.api)return await window.pywebview.api[m](...a);return null}
+function fmt(n){return Math.floor(n).toLocaleString('en-US')}
+function fmtC(n){const a=Math.abs(n),s=n>=0?'+':'-';if(a>=1e6)return s+(a/1e6).toFixed(1).replace(/\.0$/,'')+'M';if(a>=1e3)return s+(a/1e3).toFixed(1).replace(/\.0$/,'')+'K';return(n>=0?'+':'')+Math.floor(n)}
+function openPop(id){document.getElementById('pop'+id.charAt(0).toUpperCase()+id.slice(1)).classList.add('active')}
+function closePop(id){document.getElementById('pop'+id.charAt(0).toUpperCase()+id.slice(1)).classList.remove('active')}
 
-// ========== API Bridge ==========
-async function api(method, ...args) {
-  if (window.pywebview && window.pywebview.api) {
-    return await window.pywebview.api[method](...args);
-  }
-  console.warn('pywebview API not available, method:', method);
-  return null;
-}
+/* Monitor */
+let _mt=null;
+async function doStart(){const iv=parseInt(document.getElementById('intervalInput').value)||3;await api('set_interval',iv);const ok=await api('start_monitor');if(ok){document.getElementById('btnStart').disabled=true;document.getElementById('btnStop').disabled=false;setStatus('run','运行中')}}
+async function doStop(){await api('stop_monitor');document.getElementById('btnStart').disabled=false;document.getElementById('btnStop').disabled=true;setStatus('idle','已停止')}
+async function doTest(){await api('test_notification');appendLog('[测试] 已发送通知')}
+async function doAdd(){const i=document.getElementById('addInput'),n=i.value.trim();if(!n)return;const ok=await api('add_bullet',n);if(ok){i.value='';refreshTable()}else{i.style.borderColor='var(--red)';setTimeout(()=>i.style.borderColor='',800)}}
+async function doRemove(n){await api('remove_bullet',n);refreshTable()}
+function openThresholdModal(n,t,c){_mt={name:n,type:t};const te=document.getElementById('modalTitle'),h=document.getElementById('modalHint'),i=document.getElementById('modalInput');if(t==='buy'){te.textContent=n+' — 买入线';te.className='mb';h.textContent='≤ 此价提醒买入，0=关'}else{te.textContent=n+' — 卖出线';te.className='ms';h.textContent='≥ 此价提醒卖出，0=关'}i.value=c||0;document.getElementById('thresholdModal').classList.add('active');setTimeout(()=>i.focus(),100)}
+function closeModal(){document.getElementById('thresholdModal').classList.remove('active');_mt=null}
+async function confirmModal(){if(!_mt)return;const v=parseInt(document.getElementById('modalInput').value)||0;if(_mt.type==='buy')await api('set_buy_threshold',_mt.name,v);else await api('set_sell_threshold',_mt.name,v);closeModal();refreshTable()}
+function setStatus(s,t){document.getElementById('statusBadge').className='badge badge-'+(s==='run'?'run':'idle');document.getElementById('statusText').textContent=t}
+function appendLog(m){const b=document.getElementById('logBody'),d=document.createElement('div');d.className='le';if(m.includes('❌'))d.className+=' error';else if(m.includes('⚠'))d.className+=' warning';d.textContent=m;b.appendChild(d);b.scrollTop=b.scrollHeight;while(b.children.length>150)b.removeChild(b.firstChild)}
+function appendAlert(m,l){const b=document.getElementById('alertBody'),d=document.createElement('div');d.className='le '+(l||'warning');d.textContent=m;b.appendChild(d);b.scrollTop=b.scrollHeight;while(b.children.length>150)b.removeChild(b.firstChild)}
+async function refreshTable(){const data=await api('get_status');if(!data)return;const tb=document.getElementById('bulletTableBody');if(!data.length){tb.innerHTML='<tr><td colspan="6" class="es">暂无监控项</td></tr>';return}let h='';for(const i of data){const p=i.price!==null?i.price:'—';const bd=i.buy_threshold>0?'<span class="tc bl" onclick="openThresholdModal(\''+i.name+"','buy',"+i.buy_threshold+')">'+i.buy_threshold+'</span>':'<span class="tc un" onclick="openThresholdModal(\''+i.name+"','buy',0)\">设置</span>";const sd=i.sell_threshold>0?'<span class="tc sl" onclick="openThresholdModal(\''+i.name+"','sell',"+i.sell_threshold+')">'+i.sell_threshold+'</span>':'<span class="tc un" onclick="openThresholdModal(\''+i.name+"','sell',0)\">设置</span>";h+='<tr><td class="bn">'+i.name+'</td><td class="pc">'+p+'</td><td>'+bd+'</td><td>'+sd+'</td><td><span class="st '+i.status+'">'+i.status_text+'</span></td><td style="text-align:center"><button class="xb" onclick="doRemove(\''+i.name+'\')">✕</button></td></tr>'}tb.innerHTML=h}
+window.onPyLog=function(m){appendLog(m)};window.onPyAlert=function(m,l){appendAlert(m,l)};window.onPyUpdate=function(){refreshTable()};
+window.onPyStatusChange=function(s,t){setStatus(s,t);if(s!=='running'){document.getElementById('btnStart').disabled=false;document.getElementById('btnStop').disabled=true}};
+window.onPySpeed=function(){};
 
-// ========== Actions ==========
-async function doStart() {
-  const interval = parseInt(document.getElementById('intervalInput').value) || 3;
-  await api('set_interval', interval);
-  const ok = await api('start_monitor');
-  if (ok) {
-    document.getElementById('btnStart').disabled = true;
-    document.getElementById('btnStop').disabled = false;
-    setStatus('running', '运行中');
-  }
-}
+/* Calculators */
+function getDelta(b,s){if(!b||!s)return{f:0,d:0,p:0};const r=s/b;let fr=r<=1?.103:r<=2?.103+(r-1)*.011:r<=4?.114+(r-2)*.072:.258+(r-4)*.15;const f=Math.floor(s*Math.min(fr,.8)),d=Math.max(Math.floor(s*.03),Math.floor(b*.1*.03));return{f,d,p:s-f-d-b}}
+function updateSellCalc(){const p1=parseFloat(document.getElementById('p1').value)||0,p2=parseFloat(document.getElementById('p2').value)||0;document.getElementById('sugVal').textContent=(p1&&p2)?fmt(p1-Math.abs(p2-p1)):'--'}
+function updateProfitCalc(){const b=parseFloat(document.getElementById('buyPrice').value)||0,s=parseFloat(document.getElementById('sellPrice').value)||0;const r=getDelta(b,s);document.getElementById('feeShow').textContent=fmt(r.f);document.getElementById('depShow').textContent=fmt(r.d);const pe=document.getElementById('profit');if(b||s){pe.textContent=(r.p>=0?'+':'')+fmt(r.p);pe.style.color=r.p>=0?'var(--buy)':'var(--red)';document.getElementById('roi').textContent='ROI '+(b>0?(r.p/b*100).toFixed(1):0)+'%'}else{pe.textContent='+0';pe.style.color='var(--t3)';document.getElementById('roi').textContent='ROI 0.0%'}if(b>0){for(let x=Math.floor(b);x<b*4;x++){if(getDelta(b,x).p>=0){document.getElementById('beInfo').textContent=fmt(x);break}}}else document.getElementById('beInfo').textContent='--'}
+function applyQuick(){const v=document.getElementById('sugVal').textContent.replace(/,/g,'');if(v!=='--'){document.getElementById('sellPrice').value=v;updateProfitCalc();closePop('sellCalc');openPop('profitCalc')}}
 
-async function doStop() {
-  await api('stop_monitor');
-  document.getElementById('btnStart').disabled = false;
-  document.getElementById('btnStop').disabled = true;
-  setStatus('idle', '已停止');
-}
+/* Warehouse */
+let whBuy=true,whDF=null,whCY,whCM;const td=new Date();
+function tdKey(){return td.getFullYear()+'/'+(td.getMonth()+1)+'/'+td.getDate()}
+async function openWarehouse(){whCY=td.getFullYear();whCM=td.getMonth()+1;whDF=tdKey();document.getElementById('whOverlay').classList.add('active');const fn=await api('get_trade_file_name');if(fn){document.getElementById('whFileDot').style.background='var(--green)';document.getElementById('whFileName').textContent=fn}whRefresh()}
+function closeWarehouse(){document.getElementById('whOverlay').classList.remove('active')}
+async function whOpenFile(){const fn=await api('open_trade_file');if(fn){document.getElementById('whFileDot').style.background='var(--green)';document.getElementById('whFileName').textContent=fn;whRefresh()}}
+async function whCreateFile(){const fn=await api('create_trade_file');if(fn){document.getElementById('whFileDot').style.background='var(--green)';document.getElementById('whFileName').textContent=fn;whRefresh()}}
+function whSetMode(b){whBuy=b;document.getElementById('whModeBuy').className=b?'mb3 ab3':'mb3 in3';document.getElementById('whModeSell').className=b?'mb3 in3':'mb3 as3'}
+function whGetTotalQty(){const q=parseInt(document.getElementById('whQty').value)||0;const e=parseInt(document.getElementById('whEnv').value)||0;return q+e*ENV_SIZE}
+function whUpT(){const p=parseFloat(document.getElementById('whPrice').value)||0;document.getElementById('whTotal').textContent=fmt(p*whGetTotalQty())}
+function whChk(){const n=document.getElementById('whName').value.trim(),p=document.getElementById('whPrice').value.trim(),tq=whGetTotalQty();document.getElementById('whWriteBtn').disabled=!(n&&p&&tq>0)}
+async function whAppend(){const n=document.getElementById('whName').value.trim(),p=parseInt(document.getElementById('whPrice').value)||0,tq=whGetTotalQty();if(!n||!p||tq<=0)return;await api('append_trade',whBuy?'购入':'出售',n,p,tq);document.getElementById('whName').value='';document.getElementById('whPrice').value='';document.getElementById('whQty').value='';document.getElementById('whEnv').value='';whUpT();whChk();whDF=tdKey();whCY=td.getFullYear();whCM=td.getMonth()+1;await whRefresh();scrollDSToToday()}
+async function whDel(i){await api('delete_trade',i);whRefresh()}
+async function whUndo(){await api('undo_trade_delete');whRefresh()}
+function scrollDSToToday(){const sl=document.getElementById('whDateSlider');const n=sl.querySelector('.dn.active')||sl.querySelector('.dn.today');if(n)n.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'})}
+function whPL(l){const p=l.split('\t');if(p.length<5)return null;return{time:p[0].trim(),action:p[1].trim(),name:p[2].trim(),up:parseInt(p[3].replace('单价:','').trim()),qty:parseInt(p[4].replace('数量:','').replace('只','').trim()),get total(){return this.up*this.qty}}}
+async function whRefresh(){const all=await api('get_all_trades');if(!all)return;const fl=whDF?all.filter(l=>l.startsWith(whDF)):all;whRenderLog(fl,all);whRenderStock(fl);whRenderDS(all);document.getElementById('whYear').textContent=whCY;document.getElementById('whMonth').textContent=whCM}
+function whRenderLog(lines,all){const b=document.getElementById('whLogBody');b.innerHTML='';if(!lines.length){b.innerHTML='<div class="es">当日无交易记录</div>';return}lines.slice().reverse().forEach(line=>{const d=whPL(line);if(!d)return;const ib=d.action==='购入',idx=all.indexOf(line);const e=document.createElement('div');e.className='tle';e.innerHTML='<span class="tlb '+(ib?'buy':'sell')+'">'+d.action+'</span><span class="tln">'+d.name+'</span><span class="tla '+(ib?'buy':'sell')+'">'+(ib?'-':'+')+fmt(d.total)+'</span><span class="tld">'+d.qty+'×@'+d.up+'</span><span class="tlt">'+d.time+'</span><button class="tlx" onclick="whDel('+idx+')">×</button>';b.appendChild(e)})}
+function whRenderStock(lines){const b=document.getElementById('whStockBoard');b.innerHTML='';let stocks={},tn=0;lines.forEach(l=>{const d=whPL(l);if(!d)return;if(!stocks[d.name])stocks[d.name]={qty:0,profit:0,lastUp:d.up};if(d.action==='购入'){stocks[d.name].qty+=d.qty;stocks[d.name].profit-=d.up*d.qty;stocks[d.name].lastUp=d.up}else{stocks[d.name].qty-=d.qty;const dl=getDelta(stocks[d.name].lastUp||d.up,d.up);stocks[d.name].profit+=(d.up-dl.f-dl.d)*d.qty}});Object.keys(stocks).forEach(n=>{const s=stocks[n];tn+=s.profit;b.innerHTML+='<div class="sit"><div class="sin">'+n+'</div><div class="siq" style="color:'+(s.qty>=0?'#fff':'var(--red)')+'">'+fmt(s.qty)+'发</div><div class="sip" style="color:'+(s.profit>=0?'var(--green)':'var(--red)')+'">'+fmt(s.profit)+'</div></div>'});document.getElementById('whTotalNet').textContent=fmt(tn)}
+function whBuildCalData(all){const cd={};all.forEach(l=>{const d=whPL(l);if(!d)return;const dk=d.time.split(' ')[0];if(!cd[dk])cd[dk]={inc:0,exp:0};if(d.action==='购入')cd[dk].exp+=d.total;else cd[dk].inc+=d.total});return cd}
+function whRenderDS(all){const sl=document.getElementById('whDateSlider'),dim=new Date(whCY,whCM,0).getDate();const tdd=(td.getFullYear()===whCY&&td.getMonth()+1===whCM)?td.getDate():-1;const cd=whBuildCalData(all);sl.innerHTML='';for(let d=1;d<=dim;d++){const dk=whCY+'/'+whCM+'/'+d,n=document.createElement('div');n.className='dn';if(d===tdd)n.classList.add('today');const c=cd[dk];if(c){if(c.inc-c.exp>0)n.classList.add('has-inc');else if(c.inc-c.exp<0)n.classList.add('has-exp')}if(whDF===dk)n.classList.add('active');n.textContent=d;n.onclick=()=>{whDF=dk;whRefresh()};sl.appendChild(n)}requestAnimationFrame(()=>scrollDSToToday())}
+function toggleFullCal(){const c=document.getElementById('fullCal');c.style.display=c.style.display==='block'?'none':'block';if(c.style.display==='block')renderFullCal()}
+function renderFullCal(){document.getElementById('calTitle').textContent=whCY+'年 '+whCM+'月';const g=document.getElementById('calGrid'),fd=new Date(whCY,whCM-1,1).getDay(),dim=new Date(whCY,whCM,0).getDate();let h=['日','一','二','三','四','五','六'].map(d=>'<div style="color:#666;font-weight:bold;font-size:12px">'+d+'</div>').join('');for(let i=0;i<fd;i++)h+='<div></div>';api('get_all_trades').then(all=>{const cd=whBuildCalData(all||[]);for(let d=1;d<=dim;d++){const dk=whCY+'/'+whCM+'/'+d,c=cd[dk],isT=td.getFullYear()===whCY&&td.getMonth()+1===whCM&&td.getDate()===d;let ph='';if(c){const net=c.inc-c.exp;ph='<div class="fcal-profit '+(net>=0?'pos':'neg')+'">'+fmtC(net)+'</div>'}h+='<div class="fcal-item'+(isT?' today':'')+'" onclick="whDF=\''+dk+'\';whRefresh();toggleFullCal()"><div>'+d+'</div>'+ph+'</div>'}g.innerHTML=h})}
+function chgMonth(d){whCM+=d;if(whCM>12){whCM=1;whCY++}if(whCM<1){whCM=12;whCY--}document.getElementById('whYear').textContent=whCY;document.getElementById('whMonth').textContent=whCM;renderFullCal();api('get_all_trades').then(all=>whRenderDS(all||[]))}
 
-async function doTest() {
-  await api('test_notification');
-  appendLog('[测试] 🔔 已发送测试通知');
-}
+/* Sub-panels */
+function openSubPanel(id){if(id==='holdings')renderHoldings();if(id==='global')renderGlobal();document.getElementById(id==='holdings'?'subHoldings':'subGlobal').classList.add('active')}
+function closeSubPanel(id){document.getElementById(id==='holdings'?'subHoldings':'subGlobal').classList.remove('active')}
+async function renderHoldings(){const all=await api('get_all_trades')||[],stocks={};all.forEach(l=>{const d=whPL(l);if(!d)return;if(!stocks[d.name])stocks[d.name]={qty:0,lastUp:d.up};if(d.action==='购入'){stocks[d.name].qty+=d.qty;stocks[d.name].lastUp=d.up}else stocks[d.name].qty-=d.qty});const hs=[];let tq=0,tv=0;Object.keys(stocks).forEach(n=>{const s=stocks[n];if(s.qty>0){const v=s.qty*s.lastUp;hs.push({name:n,qty:s.qty,val:v});tq+=s.qty;tv+=v}});hs.sort((a,b)=>b.qty-a.qty);hs.forEach(h=>h.pct=tq>0?h.qty/tq*100:0);const cs=['#ff9800','#00e5ff','#ff5252','#4caf50','#ab47bc','#ffeb3b','#26a69a','#ef5350'],c=document.getElementById('holdingsContent');if(!hs.length){c.innerHTML='<div class="es" style="padding:40px;color:#444">📦 暂无持仓</div>';return}let h='<div style="display:flex;flex-direction:column;gap:8px">';hs.forEach((x,i)=>{const cl=cs[i%cs.length];h+='<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);border-radius:10px"><div style="width:10px;height:10px;border-radius:50%;background:'+cl+';box-shadow:0 0 6px '+cl+'"></div><div style="flex:1"><div style="font-size:14px;font-weight:800;color:#c0c8d8">'+x.name+'子弹</div><div style="width:100%;height:4px;background:rgba(255,255,255,.04);border-radius:2px;margin-top:5px;overflow:hidden"><div style="height:100%;width:'+x.pct+'%;background:'+cl+';border-radius:2px"></div></div></div><div style="text-align:right"><div style="font-size:16px;font-weight:900;font-family:Consolas,monospace;color:#fff">'+fmt(x.qty)+'<span style="font-size:11px;color:#666;margin-left:2px">发</span></div><div style="font-size:12px;font-weight:800;font-family:Consolas,monospace;color:'+cl+'">'+x.pct.toFixed(1)+'%</div></div></div>'});h+='</div><div style="display:flex;gap:12px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.05)"><div style="flex:1;text-align:center;padding:10px;background:rgba(255,255,255,.02);border-radius:8px"><div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px">种类</div><div style="font-size:20px;font-weight:900;color:#ff9800;font-family:Consolas,monospace">'+hs.length+'</div></div><div style="flex:1;text-align:center;padding:10px;background:rgba(255,255,255,.02);border-radius:8px"><div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px">总量</div><div style="font-size:20px;font-weight:900;color:#fff;font-family:Consolas,monospace">'+fmt(tq)+'</div></div><div style="flex:1;text-align:center;padding:10px;background:rgba(255,255,255,.02);border-radius:8px"><div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px">价值</div><div style="font-size:20px;font-weight:900;color:var(--fee);font-family:Consolas,monospace">'+fmt(tv)+'</div></div></div>';c.innerHTML=h}
+async function renderGlobal(){const all=await api('get_all_trades')||[],stocks={};all.forEach(l=>{const d=whPL(l);if(!d)return;if(!stocks[d.name])stocks[d.name]={qty:0,profit:0,lastUp:d.up,tB:0,tS:0};if(d.action==='购入'){stocks[d.name].qty+=d.qty;stocks[d.name].profit-=d.up*d.qty;stocks[d.name].lastUp=d.up;stocks[d.name].tB+=d.total}else{stocks[d.name].qty-=d.qty;const dl=getDelta(stocks[d.name].lastUp||d.up,d.up);stocks[d.name].profit+=(d.up-dl.f-dl.d)*d.qty;stocks[d.name].tS+=d.total}});const items=[];let tp=0,tv=0,tb=0,ts=0;Object.keys(stocks).forEach(n=>{const s=stocks[n];const v=s.qty>0?s.qty*s.lastUp:0;items.push({name:n,...s,val:v});tp+=s.profit;tv+=v;tb+=s.tB;ts+=s.tS});items.sort((a,b)=>b.profit-a.profit);const c=document.getElementById('globalContent');if(!items.length){c.innerHTML='<div class="es" style="padding:40px;color:#444">📊 暂无数据</div>';return}let h='<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:10px;padding:0 14px 8px;font-size:10px;color:#444;text-transform:uppercase;letter-spacing:1.5px;font-weight:600"><span>品种</span><span style="text-align:right;min-width:60px">持仓</span><span style="text-align:right;min-width:80px">收益</span><span style="text-align:right;min-width:70px">价值</span></div>';items.forEach(s=>{h+='<div style="display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:10px;padding:8px 14px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);border-radius:10px;margin-bottom:4px"><div style="font-size:14px;font-weight:800;color:#c0c8d8">'+s.name+'</div><div style="font-size:14px;font-weight:900;font-family:Consolas,monospace;text-align:right;min-width:60px;color:'+(s.qty>0?'#fff':s.qty<0?'var(--red)':'#555')+'">'+fmt(s.qty)+'</div><div style="font-size:13px;font-weight:800;font-family:Consolas,monospace;text-align:right;min-width:80px;color:'+(s.profit>=0?'var(--green)':'var(--red)')+'">'+(s.profit>=0?'+':'')+fmt(s.profit)+'</div><div style="font-size:12px;color:#666;font-family:Consolas,monospace;text-align:right;min-width:70px">'+(s.val>0?fmt(s.val):'--')+'</div></div>'});h+='<div style="display:flex;gap:12px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.05)"><div style="flex:1;text-align:center;padding:10px;background:rgba(255,255,255,.02);border-radius:8px"><div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px">买入</div><div style="font-size:16px;font-weight:900;color:var(--red);font-family:Consolas,monospace">'+fmt(tb)+'</div></div><div style="flex:1;text-align:center;padding:10px;background:rgba(255,255,255,.02);border-radius:8px"><div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px">卖出</div><div style="font-size:16px;font-weight:900;color:var(--green);font-family:Consolas,monospace">'+fmt(ts)+'</div></div><div style="flex:1;text-align:center;padding:10px;background:rgba(255,255,255,.02);border-radius:8px"><div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px">收益</div><div style="font-size:16px;font-weight:900;color:'+(tp>=0?'var(--green)':'var(--red)')+';font-family:Consolas,monospace">'+(tp>=0?'+':'')+fmt(tp)+'</div></div><div style="flex:1;text-align:center;padding:10px;background:rgba(255,255,255,.02);border-radius:8px"><div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px">持仓</div><div style="font-size:16px;font-weight:900;color:var(--fee);font-family:Consolas,monospace">'+fmt(tv)+'</div></div></div>';c.innerHTML=h}
 
-async function doAdd() {
-  const input = document.getElementById('addInput');
-  const name = input.value.trim();
-  if (!name) return;
-  const ok = await api('add_bullet', name);
-  if (ok) {
-    input.value = '';
-    refreshTable();
-  } else {
-    input.style.borderColor = 'var(--accent-red)';
-    setTimeout(() => input.style.borderColor = '', 1000);
-  }
-}
-
-async function doRemove(name) {
-  await api('remove_bullet', name);
-  refreshTable();
-}
-
-// ========== Modal ==========
-function openThresholdModal(name, type, current) {
-  _modalTarget = { name: name, type: type };
-  const titleEl = document.getElementById('modalTitle');
-  const hintEl = document.getElementById('modalHint');
-  const inputEl = document.getElementById('modalInput');
-
-  if (type === 'buy') {
-    titleEl.textContent = name + ' — 买入线';
-    titleEl.className = 'modal-buy';
-    hintEl.textContent = '≤ 此价格时提醒买入，0 = 不检测';
-    inputEl.className = 'input-buy';
-  } else {
-    titleEl.textContent = name + ' — 卖出线';
-    titleEl.className = 'modal-sell';
-    hintEl.textContent = '≥ 此价格时提醒卖出，0 = 不检测';
-    inputEl.className = 'input-sell';
-  }
-
-  inputEl.value = current || 0;
-  document.getElementById('thresholdModal').classList.add('active');
-  setTimeout(() => inputEl.focus(), 100);
-}
-
-function closeModal() {
-  document.getElementById('thresholdModal').classList.remove('active');
-  _modalTarget = null;
-}
-
-async function confirmModal() {
-  if (!_modalTarget) return;
-  const val = parseInt(document.getElementById('modalInput').value) || 0;
-  if (_modalTarget.type === 'buy') {
-    await api('set_buy_threshold', _modalTarget.name, val);
-  } else {
-    await api('set_sell_threshold', _modalTarget.name, val);
-  }
-  closeModal();
-  refreshTable();
-}
-
-// ========== UI Updates ==========
-function setStatus(state, text) {
-  const badge = document.getElementById('statusBadge');
-  badge.className = 'status-badge status-' + state;
-  document.getElementById('statusText').textContent = text;
-}
-
-function appendLog(msg) {
-  const body = document.getElementById('logBody');
-  const div = document.createElement('div');
-  div.className = 'log-entry';
-  if (msg.includes('❌')) div.className += ' error';
-  else if (msg.includes('⚠')) div.className += ' warning';
-  div.textContent = msg;
-  body.appendChild(div);
-  body.scrollTop = body.scrollHeight;
-  while (body.children.length > 150) body.removeChild(body.firstChild);
-}
-
-function appendAlert(msg, level) {
-  const body = document.getElementById('alertBody');
-  const div = document.createElement('div');
-  div.className = 'log-entry ' + (level || 'warning');
-  div.textContent = msg;
-  body.appendChild(div);
-  body.scrollTop = body.scrollHeight;
-  while (body.children.length > 150) body.removeChild(body.firstChild);
-}
-
-async function refreshTable() {
-  const data = await api('get_status');
-  if (!data) return;
-
-  const tbody = document.getElementById('bulletTableBody');
-  if (data.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">暂无监控项，请添加子弹名称</td></tr>';
-    updateStats(data);
-    return;
-  }
-
-  let html = '';
-  for (const item of data) {
-    const priceDisplay = item.price !== null ? item.price : '—';
-
-    // 买入线
-    const buyDisplay = item.buy_threshold > 0
-      ? '<span class="threshold-cell buy-line" onclick="openThresholdModal(\'' + item.name + '\', \'buy\', ' + item.buy_threshold + ')">' + item.buy_threshold + '</span>'
-      : '<span class="threshold-cell unset" onclick="openThresholdModal(\'' + item.name + '\', \'buy\', 0)">点击设置</span>';
-
-    // 卖出线
-    const sellDisplay = item.sell_threshold > 0
-      ? '<span class="threshold-cell sell-line" onclick="openThresholdModal(\'' + item.name + '\', \'sell\', ' + item.sell_threshold + ')">' + item.sell_threshold + '</span>'
-      : '<span class="threshold-cell unset" onclick="openThresholdModal(\'' + item.name + '\', \'sell\', 0)">点击设置</span>';
-
-    html += '<tr>' +
-      '<td class="bullet-name">' + item.name + '</td>' +
-      '<td class="price-cell">' + priceDisplay + '</td>' +
-      '<td>' + buyDisplay + '</td>' +
-      '<td>' + sellDisplay + '</td>' +
-      '<td><span class="status-tag ' + item.status + '">' + item.status_text + '</span></td>' +
-      '<td style="text-align:center">' +
-        '<button class="action-btn" onclick="doRemove(\'' + item.name + '\')" title="删除">✕</button>' +
-      '</td>' +
-    '</tr>';
-  }
-  tbody.innerHTML = html;
-  updateStats(data);
-}
-
-function updateStats(data) {
-  document.getElementById('statTotal').textContent = data.length;
-  document.getElementById('statBuy').textContent = data.filter(d => d.status === 'buy_signal').length;
-  document.getElementById('statSell').textContent = data.filter(d => d.status === 'sell_signal').length;
-}
-
-// ========== Callbacks from Python ==========
-window.onPyLog = function(msg) { appendLog(msg); };
-window.onPyAlert = function(msg, level) { appendAlert(msg, level); };
-window.onPyUpdate = function() { refreshTable(); };
-window.onPyStatusChange = function(state, text) {
-  setStatus(state, text);
-  if (state !== 'running') {
-    document.getElementById('btnStart').disabled = false;
-    document.getElementById('btnStop').disabled = true;
-  }
-};
-window.onPySpeed = function(speed) {
-  document.getElementById('statSpeed').textContent = speed;
-};
-
-// ========== Init ==========
-window.addEventListener('pywebviewready', function() {
-  refreshTable();
-  api('get_version').then(v => {
-    if (v) document.getElementById('verInfo').textContent = 'v' + v + ' · webview · 子进程抓取';
-  });
-  api('check_for_update').then(r => {
-    try {
-      var j = JSON.parse(r);
-      if (j.status !== 'latest' && j.status !== 'dev' && j.message) {
-        appendLog('[更新] ' + j.message);
-      }
-    } catch(e) {}
-  });
-});
-setTimeout(() => refreshTable(), 500);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.getElementById('thresholdModal').classList.contains('active'))closeModal();else if(document.getElementById('subHoldings').classList.contains('active'))closeSubPanel('holdings');else if(document.getElementById('subGlobal').classList.contains('active'))closeSubPanel('global');else if(document.getElementById('popSellCalc').classList.contains('active'))closePop('sellCalc');else if(document.getElementById('popProfitCalc').classList.contains('active'))closePop('profitCalc');else if(document.getElementById('fullCal').style.display==='block')document.getElementById('fullCal').style.display='none';else if(document.getElementById('whOverlay').classList.contains('active'))closeWarehouse()}});
+window.addEventListener('pywebviewready',function(){refreshTable();api('get_version').then(v=>{if(v)document.getElementById('verInfo').textContent='v'+v});api('check_for_update').then(r=>{try{var j=JSON.parse(r);if(j.status!=='latest'&&j.status!=='dev'&&j.message)appendLog('[更新] '+j.message)}catch(e){}})});
+setTimeout(()=>refreshTable(),500);
 </script>
 </body>
 </html>

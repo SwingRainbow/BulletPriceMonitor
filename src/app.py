@@ -8,6 +8,7 @@ import webview
 from src.monitor import MonitorEngine
 from src.config import load_settings, save_settings
 from src.notifier import send_toast
+from src import trade_store
 from version import __version__
 from updater import check_update
 
@@ -26,6 +27,7 @@ class Api:
     def __init__(self):
         self._engine = MonitorEngine()
         self._window = None
+        self._undo_stack = []
         self._setup_callbacks()
 
     def _setup_callbacks(self):
@@ -55,7 +57,7 @@ class Api:
         if not self._engine.running:
             self._eval_js("window.onPyStatusChange('idle', '已停止')")
 
-    # ===== 公开方法 =====
+    # ===== 监控 API =====
     def get_version(self):
         return __version__
 
@@ -94,6 +96,67 @@ class Api:
     def get_settings(self):
         return load_settings()
 
+    # ===== 交易/仓库 API =====
+    def get_all_trades(self):
+        return trade_store.get_all_trades()
+
+    def get_trades_by_date(self, date_key: str):
+        return trade_store.get_trades_by_date(date_key)
+
+    def append_trade(self, action: str, name: str, unit_price: int, qty: int):
+        return trade_store.append_trade(action, name, unit_price, qty)
+
+    def delete_trade(self, index: int):
+        deleted = trade_store.delete_trade(index)
+        if deleted:
+            self._undo_stack.append({'line': deleted, 'index': index})
+        return deleted
+
+    def undo_trade_delete(self):
+        if not self._undo_stack:
+            return False
+        item = self._undo_stack.pop()
+        trade_store.undo_delete_trade(item['line'], item['index'])
+        return True
+
+    def open_trade_file(self):
+        """用系统文件对话框打开交易记录文件"""
+        try:
+            result = self._window.create_file_dialog(
+                webview.OPEN_DIALOG,
+                file_types=('文本文件 (*.txt)',),
+            )
+            if result and len(result) > 0:
+                filepath = result[0]
+                trade_store.set_trade_file(filepath)
+                return os.path.basename(filepath)
+        except Exception as e:
+            print(f"[App] 打开文件失败: {e}")
+        return None
+
+    def create_trade_file(self):
+        """用系统文件对话框新建交易记录文件"""
+        try:
+            result = self._window.create_file_dialog(
+                webview.SAVE_DIALOG,
+                save_filename='trades.txt',
+                file_types=('文本文件 (*.txt)',),
+            )
+            if result:
+                filepath = result if isinstance(result, str) else result[0]
+                # 创建空文件
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    pass
+                trade_store.set_trade_file(filepath)
+                return os.path.basename(filepath)
+        except Exception as e:
+            print(f"[App] 新建文件失败: {e}")
+        return None
+
+    def get_trade_file_name(self):
+        """获取当前交易文件名"""
+        return trade_store.get_trade_file_name()
+
 
 def create_window():
     api = Api()
@@ -103,9 +166,9 @@ def create_window():
         title=f'⚡ 子弹价格闪电监视 v{__version__}',
         url=frontend,
         js_api=api,
-        width=1100,
-        height=760,
-        min_size=(900, 600),
+        width=1200,
+        height=800,
+        min_size=(1000, 650),
         background_color='#0d1117',
     )
     api._window = window
