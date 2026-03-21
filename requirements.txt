@@ -1,0 +1,6 @@
+pywebview>=5.0
+Pillow>=9.0
+
+# 注意: Windows 上使用 EdgeChromium 后端，不需要 pythonnet
+# 如果 pip 自动拉 pythonnet 报错，用 install.bat 安装
+# 或: pip install pywebview --no-deps && pip install Pillow bottle proxy_tools typing_extensions
