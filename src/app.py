@@ -14,7 +14,7 @@ from updater import check_update
 
 def _get_frontend_path():
     if getattr(sys, 'frozen', False):
-        base = sys._MEIPASS
+        base = os.path.join(sys._MEIPASS, 'src')
     else:
         base = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(base, 'frontend', 'index.html')
