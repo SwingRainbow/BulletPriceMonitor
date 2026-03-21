@@ -99,36 +99,8 @@ class Api:
     # ===== 经济学数据拉取 API =====
     def fetch_econ_data(self):
         """拉取 orzice 经济学数据并更新大脑"""
-        import subprocess
-        try:
-            if getattr(sys, 'frozen', False):
-                base = os.path.dirname(sys.executable)
-            else:
-                base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-            update_script = os.path.join(base, 'update_brain.py')
-            if not os.path.exists(update_script):
-                return {'status': 'error', 'message': 'update_brain.py 不存在'}
-
-            kw = {'capture_output': True, 'text': True, 'timeout': 150}
-            if sys.platform == 'win32':
-                kw['creationflags'] = subprocess.CREATE_NO_WINDOW
-
-            result = subprocess.run([sys.executable, update_script], **kw)
-
-            if result.returncode == 0:
-                output = result.stdout.strip()
-                if '数据未变化' in output:
-                    msg = output.split('] ')[-1] if '] ' in output else output
-                    return {'status': 'dup', 'message': msg}
-                else:
-                    return {'status': 'ok', 'message': '数据已更新'}
-            else:
-                return {'status': 'error', 'message': result.stderr[:200]}
-        except subprocess.TimeoutExpired:
-            return {'status': 'error', 'message': '拉取超时(150s)'}
-        except Exception as e:
-            return {'status': 'error', 'message': str(e)}
+        from src.brain_updater import run_update
+        return run_update()
 
     # ===== 交易/仓库 API =====
     def get_all_trades(self):
