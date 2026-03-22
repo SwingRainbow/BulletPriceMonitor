@@ -24,6 +24,7 @@ def _get_base_dir():
 BASE_DIR = _get_base_dir()
 BRAIN_DIR = os.path.join(BASE_DIR, "brain")
 MARKET_DATA_FILE = os.path.join(BRAIN_DIR, "market_data.md")
+FETCH_LOG_FILE = os.path.join(BRAIN_DIR, "fetch_log.md")
 HISTORY_DIR = os.path.join(BASE_DIR, "config", "brain_history")
 DEDUP_FILE = os.path.join(BRAIN_DIR, "last_hash.json")
 
@@ -313,6 +314,82 @@ def _build_market_data_md(data: dict, fetch_times: list) -> str:
     return '\n'.join(lines)
 
 
+# ===== 拉取日志 =====
+
+def _extract_summary(data: dict) -> str:
+    """从原始数据提取关键摘要，用于日志记录"""
+    lines = []
+
+    # 昨日收益
+    if 'profit' in data and 'data' in data['profit']:
+        items = _parse_profit(data['profit']['data'])
+        g3 = sorted([p for p in items if p.get('grade') == 3],
+                     key=lambda x: x.get('bl', 0), reverse=True)
+        if g3:
+            parts = [f"{p['name']} {p['bl']}%" for p in g3[:3]]
+            lines.append(f"  - 昨日收益Top: {', '.join(parts)}")
+
+    # 今日涨幅
+    if 'topchange' in data and 'data' in data['topchange']:
+        tc = _parse_vue_data(data['topchange']['data'])
+        today_up = _grade3_only(tc.get('tops_2', []))
+        if today_up:
+            parts = [f"{i['name']} {i['bl']:+.2f}%" for i in today_up[:3]]
+            lines.append(f"  - 今日涨幅Top: {', '.join(parts)}")
+        today_down = _grade3_only(tc.get('tops_1', []))
+        if today_down:
+            parts = [f"{i['name']} {i['bl']:+.2f}%" for i in today_down[:3]]
+            lines.append(f"  - 今日跌幅Top: {', '.join(parts)}")
+
+    return '\n'.join(lines) if lines else '  - （无三级弹数据）'
+
+
+def _write_fetch_log(time_str: str, is_dup: bool, summary: str = ''):
+    """追加写入拉取日志"""
+    _ensure_dir(FETCH_LOG_FILE)
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    time_only = time_str.split(' ')[-1] if ' ' in time_str else time_str
+
+    # 读取已有内容
+    existing = ''
+    if os.path.exists(FETCH_LOG_FILE):
+        with open(FETCH_LOG_FILE, 'r', encoding='utf-8') as f:
+            existing = f.read()
+
+    # 检查今天的日期标题是否已存在
+    date_header = f"## {today}"
+    if date_header not in existing:
+        # 新的一天，在文件开头插入日期标题（保持倒序，最新在上面）
+        header = "# 拉取日志\n\n> 用于分析 orzice 数据刷新规律\n\n"
+        if existing.startswith("# 拉取日志"):
+            # 已有文件头，在第一个 ## 之前插入新日期
+            pos = existing.find('\n## ')
+            if pos >= 0:
+                existing = existing[:pos] + f"\n{date_header}\n\n" + existing[pos+1:]
+            else:
+                existing = existing.rstrip() + f"\n\n{date_header}\n\n"
+        else:
+            existing = header + f"{date_header}\n\n"
+
+    # 构造日志条目
+    if is_dup:
+        entry = f"### {time_only} — 数据未变化\n\n"
+    else:
+        entry = f"### {time_only} — 新数据\n\n{summary}\n\n"
+
+    # 在今天的日期标题后面追加条目
+    insert_pos = existing.find(date_header) + len(date_header)
+    # 跳过日期标题后的换行
+    while insert_pos < len(existing) and existing[insert_pos] == '\n':
+        insert_pos += 1
+
+    existing = existing[:insert_pos] + entry + existing[insert_pos:]
+
+    with open(FETCH_LOG_FILE, 'w', encoding='utf-8') as f:
+        f.write(existing)
+
+
 # ===== 主入口 =====
 
 def run_update(data: dict = None) -> dict:
@@ -339,10 +416,15 @@ def run_update(data: dict = None) -> dict:
             _ensure_dir(MARKET_DATA_FILE)
             with open(MARKET_DATA_FILE, 'w', encoding='utf-8') as f:
                 f.write(md_content)
+            # 写入拉取日志（重复数据）
+            _write_fetch_log(now_str, is_dup=True)
             return {'status': 'dup', 'message': f'数据未变化（第{len(last_times)}次拉取）'}
 
         fetch_times = [now_str]
         _save_dedup(new_hash, fetch_times)
+
+        # 提取数据摘要用于日志
+        summary = _extract_summary(data)
 
         # 保存原始数据到历史
         _ensure_dir(HISTORY_DIR)
@@ -356,6 +438,9 @@ def run_update(data: dict = None) -> dict:
         md_content = _build_market_data_md(data, fetch_times)
         with open(MARKET_DATA_FILE, 'w', encoding='utf-8') as f:
             f.write(md_content)
+
+        # 写入拉取日志（新数据）
+        _write_fetch_log(now_str, is_dup=False, summary=summary)
 
         return {'status': 'ok', 'message': '数据已更新'}
 
